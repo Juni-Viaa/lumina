@@ -1,10 +1,27 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HomeController;
+use App\Http\Controllers\UploadController;
+use App\Http\Controllers\HistoryController;
 
-Route::get('/', function () {
-    return view('welcome');
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth'])->group(function () {
+
+    // Dashboard Chat
+
+
+    // Documents
+    
+
 });
 
-Route::post('/ask', [HomeController::class, 'ask']);
+Route::get('/uploads', [UploadController::class, 'index'])->name('uploads.index');
+Route::post('/uploads', [UploadController::class, 'store'])->name('uploads.store');
+Route::delete('/uploads/{upload}', [UploadController::class, 'destroy'])->name('uploads.destroy');
+
+Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
