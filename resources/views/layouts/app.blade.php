@@ -14,7 +14,7 @@
 
         body {
             background-color: #c9e8f7;
-            background-image: url('{{ asset('images/Background.png') }}');
+            background-image: url("{{ asset('images/Background.png') }}");
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
