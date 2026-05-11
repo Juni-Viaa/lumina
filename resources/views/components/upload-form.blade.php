@@ -128,7 +128,7 @@ function uploadForm() {
             form.append('document', this.selectedFile);
             form.append('_token', document.querySelector('meta[name="csrf-token"]').content);
             try {
-                const res = await fetch('{{ route('uploads.store') }}', { method: 'POST', body: form });
+                const res = await fetch("{{ route('uploads.store') }}", { method: 'POST', body: form });
                 if (res.ok) this.uploaded = true;
             } catch {
                 alert('Upload gagal. Coba lagi.');

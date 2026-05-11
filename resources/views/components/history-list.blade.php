@@ -27,13 +27,6 @@
             </span>
         </div>
         @endforeach
-
-        <div class="flex justify-end px-4 pt-1">
-            <button class="text-xs text-[#1a3a52]/35 hover:text-[#1a3a52]/60 transition-colors"
-                    style="font-family: 'Space Grotesk', sans-serif;">
-                See more
-            </button>
-        </div>
     @endforelse
 
     {{-- No search results --}}
