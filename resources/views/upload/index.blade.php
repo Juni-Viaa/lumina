@@ -2,7 +2,7 @@
 
 @section('title', 'Upload Dokumen')
 
-@php $pageTitle = 'Selamat datang, ' . (auth()->user()->name ?? 'User123'); @endphp
+@php($pageTitle = 'Selamat datang, ' . auth()->user()->username)
 
 @section('content')
 

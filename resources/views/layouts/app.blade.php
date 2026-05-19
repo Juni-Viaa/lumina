@@ -69,7 +69,7 @@
     </style>
     @stack('head')
 </head>
-<body class="h-full overflow-hidden">
+<body class="h-full">
 
     <div class="flex h-full p-4 gap-3">
 
@@ -80,7 +80,7 @@
         <div class="flex flex-col flex-1 min-w-0 gap-3">
 
             {{-- Header --}}
-            @include('components.header', ['title' => $pageTitle ?? ('Selamat datang, ' . (auth()->user()->name ?? 'User123'))])
+            @include('components.header')
 
             {{-- Main content --}}
             <main class="flex-1 min-h-0">

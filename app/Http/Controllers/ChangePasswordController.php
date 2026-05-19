@@ -2,38 +2,58 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ChangePassword;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\Hash;
 
 class ChangePasswordController extends Controller
 {
-    public function index(): View
+    /**
+     * Show change password page
+     */
+    public function editPassword()
     {
         return view('change-password.index');
     }
 
-    public function editPassword(): View
-    {
-        return view('change-password.index');
-    }
-
+    /**
+     * Update user password
+     */
     public function updatePassword(Request $request)
     {
         $request->validate([
-            'current_password' => 'required',
-            'new_password' => 'required|min:8|confirmed',
+            'old_password'     => ['required'],
+            'new_password'     => ['required', 'min:8'],
+            'confirm_password' => ['required', 'same:new_password'],
         ]);
 
         $user = auth()->user();
 
-        if (!\Hash::check($request->current_password, $user->password)) {
-            return back()->withErrors(['current_password' => 'Current password is incorrect']);
+        /*
+        |--------------------------------------------------------------------------
+        | Check old password
+        |--------------------------------------------------------------------------
+        */
+
+        if (!Hash::check($request->old_password, $user->password)) {
+
+            return response()->json([
+                'message' => 'Password lama salah.',
+            ], 422);
+
         }
 
-        $user->password = \Hash::make($request->new_password);
+        /*
+        |--------------------------------------------------------------------------
+        | Update password
+        |--------------------------------------------------------------------------
+        */
+
+        $user->password = Hash::make($request->new_password);
+
         $user->save();
 
-        return redirect()->route('change-password.index')->with('success', 'Password updated successfully');
+        return response()->json([
+            'message' => 'Password berhasil diubah.',
+        ]);
     }
 }

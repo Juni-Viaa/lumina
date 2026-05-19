@@ -15,8 +15,8 @@
     {{-- Nav items --}}
     <nav class="flex flex-col gap-1">
         {{-- New Chat --}}
-        {{-- route('chat.index') --}}
-        <a href="#"
+        {{-- route('dashboard.index') --}}
+        <a href="{{ route('dashboard.index') }}"
            class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all">
             <img src="{{ asset('images/icons/NewChatIcon.png') }}" class="w-5 h-5 opacity-70" alt="New Chat">
             <span class="text-sm text-[#1a3a52]/80">New Chat</span>
@@ -48,7 +48,7 @@
                  x-transition:enter-end="opacity-100 translate-y-0"
                  class="flex flex-col gap-0.5 pl-10 mt-0.5">
                 @forelse($chatHistory ?? [] as $chat)
-                    <a href="#" class="text-sm text-[#1a3a52]/60 hover:text-[#1a3a52]/90 py-1.5 px-2 rounded-lg hover:bg-white/20 transition-all truncate">
+                    <a href="{{ route('chat.show', $chat->id) }}" class="text-sm text-[#1a3a52]/60 hover:text-[#1a3a52]/90 py-1.5 px-2 rounded-lg hover:bg-white/20 transition-all truncate">
                         {{ $chat->title ?? 'Chat ' . $loop->iteration }}
                     </a>
                 @empty
