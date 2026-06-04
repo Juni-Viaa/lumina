@@ -3,12 +3,9 @@
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <div class="flex bg-slate-800/10 rounded-3xl shadow-lg max-w-md mx-auto">
+    <div class="glass-panel flex rounded-3xl shadow-lg max-w-md mx-auto">
 
-        <div class="w-full max-w-md rounded-3xl overflow-hidden 
-                    bg-white/20 backdrop-blur-md 
-                    border border-black/30 
-                    shadow-[0_0_40px_rgba(255,255,255,0.1)]">
+        <div class="glass-inner w-full max-w-md rounded-3xl overflow-hidden backdrop-blur-md border border-white/30">
 
             <!-- Header -->
             <div class="bg-blue-200/30 backdrop-blur-md text-center py-4 font-semibold text-lg text-black">
@@ -16,11 +13,11 @@
             </div>
 
             <!-- Body -->
-            <div class="p-8">
+            <div class="glass-inner p-8">
 
                 <!-- Logo -->
                 <div class="w-24 h-24 bg-white/20 mx-auto mb-6 rounded-lg backdrop-blur-sm">
-                    <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-full h-full object-cover rounded-lg">
+                    <img src="{{ asset('images/icons/Logo.png') }}" alt="Logo" class="w-full h-full object-cover rounded-lg">
                 </div>
 
                 <form method="POST" action="{{ route('register') }}" class="space-y-6">
@@ -65,8 +62,7 @@
                     <!-- Button -->
                     <div class="text-center">
                         <button type="submit"
-                            class="bg-black/20 backdrop-blur-md text-black px-6 py-2 rounded-full text-sm 
-                                   hover:bg-white/30 transition">
+                             class="glass-inner bg-[#C9DCE4] backdrop-blur-md text-black px-6 py-2 rounded-full text-sm  hover:bg-[#92C7DD] transition">
                             Daftar
                         </button>
                     </div>
