@@ -62,8 +62,7 @@
                     <!-- Button -->
                     <div class="text-center">
                         <button type="submit"
-                            class="bg-black/20 backdrop-blur-md text-black px-6 py-2 rounded-full text-sm 
-                                   hover:bg-white/30 transition">
+                             class="glass-inner bg-[#C9DCE4] backdrop-blur-md text-black px-6 py-2 rounded-full text-sm  hover:bg-[#92C7DD] transition">
                             Daftar
                         </button>
                     </div>

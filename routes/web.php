@@ -13,28 +13,35 @@ use App\Http\Controllers\ProfileController;
 |--------------------------------------------------------------------------
 */
 
-/*
-
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard.index');
-*/
-
 Route::middleware(['auth'])->group(function () {
+
+    // ── Dashboard / Chat ──────────────────────────────────────────────────
+    Route::get ('/',                    [DashboardController::class, 'index'])       ->name('dashboard.index');
+    Route::post('/ask',                 [DashboardController::class, 'ask'])         ->name('dashboard.ask');
+    Route::get ('/history/{queryLog}',  [DashboardController::class, 'show'])        ->name('dashboard.show');
+    Route::get ('/dashboard/history',   [DashboardController::class, 'historyJson']) ->name('dashboard.history-json');
+
+    // ── Profile ───────────────────────────────────────────────────────────
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/change-password', [ChangePasswordController::class, 'index'])->name('change-password.index');
+    Route::get('/change-password', [ChangePasswordController::class, 'editPassword'])->name('profile.password');    
+    Route::post('/change-password', [ChangePasswordController::class, 'updatePassword'])->name('profile.password.update');
+
+    // ── Upload ───────────────────────────────────────────────────────────
+    Route::get('/upload', [UploadController::class, 'index'])->name('uploads.index');
+    Route::get('/upload/list', [UploadController::class, 'list'])->name('uploads.list');
+    Route::post('/upload', [UploadController::class, 'store'])->name('uploads.store');
+    Route::delete('/upload/{upload}', [UploadController::class, 'destroy'])->name('uploads.destroy');
+
+    // ── History ───────────────────────────────────────────────────────────
+    Route::get ('/history', [DashboardController::class, 'history'])->name('history.index');
+
 });
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
-Route::get('/uploads', [UploadController::class, 'index'])->name('uploads.index');
-Route::post('/uploads', [UploadController::class, 'store'])->name('uploads.store');
-Route::delete('/uploads/{upload}', [UploadController::class, 'destroy'])->name('uploads.destroy');
 
-Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
-
-Route::get('/change-password', [ChangePasswordController::class, 'index'])->name('change-password.index');
-Route::get('/change-password', [ChangePasswordController::class, 'editPassword'])->name('profile.password');
-Route::post('/change-password', [ChangePasswordController::class, 'updatePassword'])->name('profile.password.update');
 
 
 require __DIR__.'/auth.php';
