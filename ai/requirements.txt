@@ -26,3 +26,4 @@ pymysql
 rich
 dotenv
 pymysql
+flask

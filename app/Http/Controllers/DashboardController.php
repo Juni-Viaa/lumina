@@ -21,11 +21,8 @@ class DashboardController extends Controller
 
     public function index(): View
     {
-        $chatHistory     = QueryLog::where('user_id', Auth::id())
-            ->orderByDesc('created_at')->limit(5)->get();
         $initialMessages = [];
-
-        return view('dashboard.index', compact('chatHistory', 'initialMessages'));
+        return view('dashboard.index', compact('initialMessages'));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -39,10 +36,8 @@ class DashboardController extends Controller
             ['role' => 'user',      'content' => $queryLog->query_text],
             ['role' => 'assistant', 'content' => $answer?->answer_text ?? ''],
         ];
-        $chatHistory = QueryLog::where('user_id', Auth::id())
-            ->orderByDesc('created_at')->limit(5)->get();
 
-        return view('dashboard.index', compact('chatHistory', 'initialMessages'));
+        return view('dashboard.index', compact('initialMessages'));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -146,8 +141,9 @@ class DashboardController extends Controller
             ->limit(5)
             ->get(['query_id', 'query_title', 'query_text', 'created_at'])
             ->map(fn ($q) => [
-                'query_id' => $q->query_id,
-                'title'    => $q->display_title,
+                'query_id'   => $q->query_id,
+                'title'      => $q->display_title,        // truncated for sidebar
+                'full_title' => $q->query_text,           // full text for tooltip
             ]);
 
         return response()->json(['items' => $items]);

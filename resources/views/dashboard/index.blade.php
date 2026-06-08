@@ -10,6 +10,27 @@
     </button>
 @endpush
 
+@push('styles')
+<style>
+/* Markdown rendered inside assistant bubbles */
+.prose-chat { line-height: 1.6; }
+.prose-chat p          { margin-bottom: 0.4rem; }
+.prose-chat p:last-child { margin-bottom: 0; }
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3         { color: inherit; line-height: 1.3; }
+.prose-chat ul,
+.prose-chat ol         { padding-left: 1.25rem; margin: 0.4rem 0; }
+.prose-chat li         { margin-bottom: 0.15rem; }
+.prose-chat strong     { font-weight: 600; color: inherit; }
+.prose-chat em         { font-style: italic; }
+.prose-chat code       { font-size: 0.8em; }
+.prose-chat pre        { font-size: 0.8em; }
+.prose-chat blockquote { margin: 0.5rem 0; }
+.prose-chat hr         { margin: 0.75rem 0; }
+</style>
+@endpush
+
 @section('content')
 <div class="flex flex-col h-full" x-data="chatApp()">
 
@@ -48,11 +69,14 @@
                      :class="msg.role === 'user'
                          ? 'bg-[#5BB7EC] text-white rounded-tr-sm'
                          : 'bg-[#92C7DD] text-white rounded-tl-sm'">
+                    {{-- Assistant: render markdown --}}
                     <template x-if="msg.role === 'assistant'">
-                        <div x-html="formatAnswer(msg.content)"></div>
+                        <div class="prose-chat" x-html="renderMarkdown(msg.content)"></div>
                     </template>
+                    {{-- User: preserve newlines with pre-wrap --}}
                     <template x-if="msg.role === 'user'">
-                        <span x-text="msg.content"></span>
+                        <span style="white-space: pre-wrap; word-break: break-word;"
+                              x-text="msg.content"></span>
                     </template>
                 </div>
             </div>
@@ -86,9 +110,11 @@
             <textarea
                 x-model="input"
                 x-ref="inputBox"
-                @keydown.enter.prevent="if (!$event.shiftKey) sendMessage()"
+                @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); sendMessage(); }"
                 placeholder="Ketik pertanyaanmu disini..."
                 rows="1"
+                spellcheck="false"
+                autocomplete="off"
                 :disabled="loading"
                 class="glass-inner flex-1 resize-none bg-transparent border border-white/20
                        focus:ring-0 focus:outline-none text-black placeholder-black/65 text-sm
@@ -205,7 +231,10 @@ function chatApp() {
                     content: data.answer ?? 'Tidak ada jawaban.',
                 });
 
-                this.refreshSidebarHistory();
+                // Refresh sidebar — uses the global function defined in sidebar.blade.php
+                if (typeof window.refreshSidebar === 'function') {
+                    window.refreshSidebar();
+                }
 
             } catch (err) {
                 this.messages.push({
@@ -216,26 +245,6 @@ function chatApp() {
             } finally {
                 this.loading = false;
                 this.$nextTick(() => this.scrollToBottom());
-            }
-        },
-
-        async refreshSidebarHistory() {
-            try {
-                const res  = await fetch('{{ route("dashboard.history-json") }}');
-                const data = await res.json();
-                const nav  = document.getElementById('sidebar-history');
-                if (!nav || !data.items) return;
-
-                nav.innerHTML = data.items.map(item => `
-                    <a href="/history/${item.query_id}"
-                       class="text-sm text-[#1a3a52]/60 hover:text-[#1a3a52]/90
-                              py-1.5 px-2 rounded-lg hover:bg-white/20 transition-all
-                              truncate block">
-                        ${item.title}
-                    </a>
-                `).join('');
-            } catch {
-                // Best-effort — don't block user on sidebar refresh failure
             }
         },
 
@@ -254,13 +263,73 @@ function chatApp() {
             el.style.height = Math.min(el.scrollHeight, 160) + 'px';
         },
 
-        formatAnswer(text) {
+        renderMarkdown(text) {
             if (!text) return '';
-            return text
+
+            // Escape HTML first to prevent XSS
+            let html = text
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/\n/g, '<br>');
+                .replace(/>/g, '&gt;');
+
+            // ── Block elements (process top-down) ─────────────────────────
+
+            // Headings: ### h3, ## h2, # h1
+            html = html.replace(/^### (.+)$/gm, '<h3 class="font-bold text-base mt-3 mb-1">$1</h3>');
+            html = html.replace(/^## (.+)$/gm,  '<h2 class="font-bold text-lg mt-4 mb-1">$1</h2>');
+            html = html.replace(/^# (.+)$/gm,   '<h1 class="font-bold text-xl mt-4 mb-2">$1</h1>');
+
+            // Horizontal rule
+            html = html.replace(/^---+$/gm, '<hr class="border-white/30 my-3">');
+
+            // Unordered lists: lines starting with * or - (not bold/italic)
+            html = html.replace(/^[\*\-] (.+)$/gm, '<li class="ml-4 list-disc">$1</li>');
+            html = html.replace(/(<li[\s\S]*?<\/li>)(\n<li)/g, '$1$2'); // group consecutive
+            html = html.replace(/(<li[^>]*>[\s\S]*?<\/li>\n?)+/g,
+                match => `<ul class="my-2 space-y-0.5">${match}</ul>`);
+
+            // Ordered lists: lines starting with 1. 2. etc.
+            html = html.replace(/^\d+\. (.+)$/gm, '<li class="ml-4 list-decimal">$1</li>');
+            html = html.replace(/(<li class="ml-4 list-decimal">[\s\S]*?<\/li>\n?)+/g,
+                match => `<ol class="my-2 space-y-0.5">${match}</ol>`);
+
+            // Blockquote
+            html = html.replace(/^&gt; (.+)$/gm,
+                '<blockquote class="border-l-2 border-white/50 pl-3 italic opacity-80 my-1">$1</blockquote>');
+
+            // Code block (triple backtick)
+            html = html.replace(/```[\w]*\n?([\s\S]*?)```/g,
+                '<pre class="bg-black/20 rounded-lg p-3 my-2 text-xs overflow-x-auto whitespace-pre"><code>$1</code></pre>');
+
+            // ── Inline elements ────────────────────────────────────────────
+
+            // Bold+italic ***text***
+            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+
+            // Bold **text**
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>');
+
+            // Italic *text* (single asterisk, not inside words)
+            html = html.replace(/(?<![*\w])\*(?![*\s])(.+?)(?<![*\s])\*(?![*\w])/g, '<em>$1</em>');
+
+            // Inline code `code`
+            html = html.replace(/`([^`]+)`/g,
+                '<code class="bg-black/20 rounded px-1 py-0.5 text-xs font-mono">$1</code>');
+
+            // ── Paragraphs & line breaks ───────────────────────────────────
+
+            // Double newline → paragraph break
+            html = html.replace(/\n{2,}/g, '</p><p class="mt-2">');
+
+            // Single newline → <br> (inside paragraphs)
+            html = html.replace(/\n/g, '<br>');
+
+            // Wrap in paragraph if doesn't start with a block element
+            if (! /^<(h[1-6]|ul|ol|pre|blockquote|hr)/.test(html)) {
+                html = `<p>${html}</p>`;
+            }
+
+            return html;
         },
     };
 }
