@@ -54,19 +54,12 @@
                         </label>
                     </div>
 
-                    <!-- Links -->
-                    <div class="flex justify-between text-xs text-black/70">
-                        <a href="{{ route('register') }}" class="hover:underline">
-                            Belum punya akun?
-                        </a>
-
-                        @if (Route::has('password.request'))
-                            <a href="{{ route('password.request') }}" class="hover:underline">
-                                Lupa Kata Sandi?
-                            </a>
-                        @endif
+                   <!-- Links -->
+                   <div class="flex justify-center text-xs text-black/70">
+                       <a href="{{ route('register') }}" class="hover:underline">
+                           Belum punya akun?
+                       </a>
                     </div>
-
                 </form>
 
             </div>
@@ -76,14 +69,13 @@
 
 </x-guest-layout>
 
-@if (session('success'))
-    <script>
-        alert("Login berhasil!");
-    </script>
-@endif
-
 @if ($errors->any())
-    <script>
-        alert("Login gagal! Username atau password salah.");
-    </script>
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Login Gagal',
+        text: '{{ $errors->first() }}',
+        confirmButtonText: 'OK'
+    });
+</script>
 @endif
