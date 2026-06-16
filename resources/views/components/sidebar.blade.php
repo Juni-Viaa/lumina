@@ -29,6 +29,7 @@
             <span class="text-sm text-black">New Chat</span>
         </a>
 
+<<<<<<< HEAD
         {{-- Upload (Admin Only) --}}
             @if(auth()->check() && auth()->user()->role === 'admin')
                 <a href="{{ route('uploads.index') }}"
@@ -38,6 +39,15 @@
                 <span class="text-sm text-black/80">Upload Dokumen</span>
                 </a>
             @endif
+=======
+        {{-- Upload --}}
+        <a href="{{ route('uploads.index') }}"
+           class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                  {{ request()->routeIs('uploads.*') ? 'sidebar-nav-active' : '' }}">
+            <img src="{{ asset('images/icons/UploadIcon.png') }}" class="w-5 h-5 opacity-70" alt="">
+            <span class="text-sm text-black">Upload Dokumen</span>
+        </a>
+>>>>>>> ccf0871751ed7710e691f6cf95cdbd9123f774a8
 
         {{-- Riwayat Chat --}}
         <div>
