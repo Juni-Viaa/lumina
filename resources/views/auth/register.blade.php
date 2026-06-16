@@ -3,18 +3,15 @@
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <div class="glass-panel flex rounded-3xl shadow-lg max-w-md mx-auto">
-
+    <div class="flex rounded-3xl shadow-lg max-w-md mx-auto">
         <div class="glass-inner w-full max-w-md rounded-3xl overflow-hidden backdrop-blur-md border border-white/30">
-
             <!-- Header -->
             <div class="bg-blue-200/30 backdrop-blur-md text-center py-4 font-semibold text-lg text-black">
                 Daftar
             </div>
 
             <!-- Body -->
-            <div class="glass-inner p-8">
-
+            <div class="p-8">
                 <!-- Logo -->
                 <div class="w-24 h-24 bg-white/20 mx-auto mb-6 rounded-lg backdrop-blur-sm">
                     <img src="{{ asset('images/icons/Logo.png') }}" alt="Logo" class="w-full h-full object-cover rounded-lg">

@@ -46,8 +46,8 @@ EMBEDDING_MODEL  = "intfloat/multilingual-e5-large"
 EMBEDDING_DEVICE = "cpu"   # "cuda" for GPU
 
 # ── Chunking ───────────────────────────────────────────────────────────────────
-CHUNK_SIZE    = 2560   # characters per chunk
-CHUNK_OVERLAP = 256     # character overlap between consecutive chunks
+CHUNK_SIZE    = 2560
+CHUNK_OVERLAP = 256
 
 # ── FAISS index ────────────────────────────────────────────────────────────────
 FAISS_INDEX_PATH = str(VECTORSTORE_DIR / "faiss_index")
