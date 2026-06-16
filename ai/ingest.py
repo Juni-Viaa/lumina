@@ -34,8 +34,7 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import (
     PyPDFLoader,
-    Docx2txtLoader,
-    TextLoader,
+    Docx2txtLoader
 )
 from langchain_huggingface import HuggingFaceEmbeddings
 
@@ -85,11 +84,6 @@ def _load_document(payload: dict) -> dict:
         loader = PyPDFLoader(str(file_path))
     elif suffix in (".docx", ".doc"):
         loader = Docx2txtLoader(str(file_path))
-    elif suffix == ".txt":
-        try:
-            loader = TextLoader(str(file_path), encoding="utf-8")
-        except Exception:
-            loader = TextLoader(str(file_path), encoding="latin-1")
     else:
         raise ValueError(f"Unsupported extension '{suffix}'.")
 

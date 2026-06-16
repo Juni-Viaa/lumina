@@ -3,10 +3,8 @@
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <div class="glass-panel flex rounded-3xl shadow-lg max-w-md mx-auto">
-
+    <div class="flex rounded-3xl shadow-lg max-w-md mx-auto">
         <div class="glass-inner w-full max-w-md rounded-3xl overflow-hidden backdrop-blur-md border border-white/30">
-
             <!-- Header -->
             <div class="bg-blue-200/30 backdrop-blur-md text-center py-4 font-semibold text-lg text-black">
                 Masuk
@@ -14,9 +12,8 @@
 
             <!-- Body -->
             <div class="p-8">
-
                 <!-- Logo -->
-                <div class="glass-inner w-24 h-24 bg-white/30 mx-auto mb-6 rounded-lg backdrop-blur-sm">
+                <div class="w-24 h-24 bg-white/30 mx-auto mb-6 rounded-lg backdrop-blur-sm">
                     <img src="{{ asset('images/icons/Logo.png') }}" alt="Logo" class="w-full h-full object-cover rounded-lg">
                 </div>
 

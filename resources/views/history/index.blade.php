@@ -28,7 +28,6 @@
                     <div class="min-w-0 flex-1">
                         <p class="text-[#1a3a52]/80 text-sm truncate"
                            style="font-family: 'Space Grotesk', sans-serif;">
-                            {{-- FIX: use display_title accessor --}}
                             {{ $chat->display_title }}
                         </p>
                         <p class="text-[#1a3a52]/40 text-xs mt-0.5">
