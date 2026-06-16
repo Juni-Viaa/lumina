@@ -24,8 +24,7 @@
                     <div>
                         <input id="email" type="email" name="email" value="{{ old('email') }}"
                             placeholder="Email"
-                            class="w-full px-0 py-2 border-0 border-b border-black/50 bg-transparent text-black placeholder:text-black/50 focus:outline-none focus:ring-0 focus:border-black">
-                        
+                            class="w-full px-0 py-1 border-0 border-b border-black/50 bg-transparent text-black placeholder:text-black/50 focus:outline-none focus:ring-0 focus:border-black">
                         <x-input-error :messages="$errors->get('email')" class="mt-2 text-red-300" />
                     </div>
 
@@ -34,7 +33,6 @@
                         <input id="username" type="text" name="username" value="{{ old('username') }}"
                             placeholder="Nama Pengguna"
                             class="w-full px-0 py-2 border-0 border-b border-black/50 bg-transparent text-black placeholder:text-black/50 focus:outline-none focus:ring-0 focus:border-black">
-
                         <x-input-error :messages="$errors->get('username')" class="mt-2 text-red-300" />
                     </div>
 
@@ -42,8 +40,7 @@
                     <div>
                         <input id="password" type="password" name="password"
                             placeholder="Kata Sandi"
-                            class="w-full px-0 py-2 border-0 border-b border-black/50 bg-transparent text-black placeholder:text-black/50 focus:outline-none focus:ring-0 focus:border-black">
-
+                            class="w-full px-0 py-1 border-0 border-b border-black/50 bg-transparent text-black placeholder:text-black/50 focus:outline-none focus:ring-0 focus:border-black">
                         <x-input-error :messages="$errors->get('password')" class="mt-2 text-red-300" />
                     </div>
 
@@ -51,8 +48,7 @@
                     <div>
                         <input type="password" name="password_confirmation"
                             placeholder="Konfirmasi Kata Sandi"
-                            class="w-full px-0 py-2 border-0 border-b border-black/50 bg-transparent text-black placeholder:text-black/50 focus:outline-none focus:ring-0 focus:border-black">
-
+                            class="w-full px-0 py-1 border-0 border-b border-black/50 bg-transparent text-black placeholder:text-black/50 focus:outline-none focus:ring-0 focus:border-black">
                         <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2 text-red-300" />
                     </div>
 

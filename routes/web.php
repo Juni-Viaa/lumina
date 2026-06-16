@@ -29,7 +29,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Change Password
-    Route::get('/change-password', [ChangePasswordController::class, 'index'])->name('change-password.index');
+    Route::get('/change-password', [ChangePasswordController::class, 'editPassword'])->name('change-password.index');
     Route::patch('/change-password', [ChangePasswordController::class, 'editPassword'])->name('profile.password');
     Route::post('/change-password', [ChangePasswordController::class, 'updatePassword'])->name('profile.password.update');
 
