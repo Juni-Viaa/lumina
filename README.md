@@ -1,59 +1,599 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# RAG-Based Intelligent Document Analysis System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+An intelligent document analysis system based on **Retrieval-Augmented Generation (RAG)** that enables users to query information from uploaded documents using natural language. The system combines semantic search using vector databases and Large Language Models (LLMs) to generate accurate and contextual answers.
 
-## About Laravel
+## 📖 Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Traditional keyword-based document search often fails to understand the context behind user questions. This project addresses that limitation by implementing a **Retrieval-Augmented Generation (RAG)** architecture that combines:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+* Semantic document retrieval
+* Vector embeddings
+* Large Language Models (LLM)
+* Context-aware answer generation
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+The system is designed for academic environments where users need to search information from:
 
-## Learning Laravel
+* Journals
+* Learning modules
+* Reports
+* Administrative documents
+* Internal campus documents
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# ✨ Features
 
-## Laravel Sponsors
+## User Management
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Student
 
-### Premium Partners
+* Register account
+* Login & Logout
+* Change password
+* Ask questions using natural language
+* View query history
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Lecturer
 
-## Contributing
+* All student features
+* Upload PDF/DOCX documents
+* Manage documents (CRUD)
+* Maintain knowledge base
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+# 🏗 System Architecture
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The application uses a client-server architecture consisting of two main services:
 
-## Security Vulnerabilities
+```text
+┌─────────────────┐
+│   Frontend UI   │
+│ Tailwind + JS   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Laravel Backend │
+│ Authentication  │
+│ User Management │
+│ Document CRUD   │
+└────────┬────────┘
+         │ API
+         ▼
+┌─────────────────┐
+│ Flask AI Server │
+│ LangChain RAG   │
+└────────┬────────┘
+         │
+ ┌───────┼────────┐
+ ▼       ▼        ▼
+FAISS  ChromaDB  LLM
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+# 🧠 AI Pipeline
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The system implements a complete Retrieval-Augmented Generation (RAG) workflow.
+
+## 1. Document Upload
+
+Lecturers upload documents in:
+
+* PDF
+* DOCX
+
+formats.
+
+---
+
+## 2. Data Preprocessing
+
+Uploaded documents go through several preprocessing stages:
+
+### Document Parsing
+
+Extract text from PDF and DOCX files.
+
+### Text Cleaning
+
+* Remove unnecessary characters
+* Normalize spacing
+* Clean formatting noise
+
+### Content Filtering
+
+Remove pages or sections containing insufficient information.
+
+### Text Chunking
+
+Split large documents into smaller chunks.
+
+### Chunk Overlap
+
+Preserve context between chunks by overlapping adjacent text segments.
+
+---
+
+## 3. Embedding Generation
+
+Each chunk is transformed into vector representations using HuggingFace embedding models.
+
+Example models:
+
+```text
+LazarusNLP/all-indo-e5-small-v4
+intfloat/multilingual-e5-small
+sentence-transformers/all-MiniLM-L6-v2
+```
+
+---
+
+## 4. Vector Indexing
+
+Embeddings are stored in:
+
+* FAISS
+* ChromaDB
+
+for semantic similarity search.
+
+Additional metadata stored in MySQL:
+
+* Document name
+* File type
+* Storage location
+* Indexing status
+* Chunk references
+
+---
+
+## 5. Retrieval Process
+
+When a user submits a question:
+
+### Query Embedding
+
+The query is converted into a vector.
+
+### Similarity Search
+
+The system searches the vector database for semantically similar chunks.
+
+### Top-K Retrieval
+
+The most relevant chunks are selected.
+
+```text
+Top-K = 3
+Top-K = 5
+Top-K = 10
+```
+
+---
+
+## 6. Context Construction
+
+Retrieved chunks are combined into a structured context.
+
+Example:
+
+```text
+Context:
+[Document A - Page 3]
+...
+
+[Document B - Page 5]
+...
+```
+
+---
+
+## 7. Answer Generation
+
+The context and user question are sent to the LLM.
+
+The model generates:
+
+* Contextual answers
+* Source references
+* Reduced hallucinations
+
+---
+
+# 🛠 Technology Stack
+
+## Frontend
+
+* Tailwind CSS
+* Alpine.js
+
+## Backend
+
+* Laravel 12
+* PHP 8+
+
+## AI Service
+
+* Python
+* Flask
+* LangChain
+
+## Vector Database
+
+* FAISS
+* ChromaDB
+
+## Embedding Models
+
+* HuggingFace Embeddings
+
+## Database
+
+* MySQL
+
+## LLM
+
+* HuggingFace Models
+* Gemini API (optional)
+
+---
+
+# 📂 Project Structure
+
+```text
+project-root/
+│
+├── laravel/
+│   ├── app/
+│   ├── routes/
+│   ├── resources/
+│   └── database/
+│
+├── ai/
+│   ├── ingestion.py
+│   ├── preprocessing.py
+│   ├── embedding.py
+│   ├── vectorstore.py
+│   ├── retriever.py
+│   ├── rag_chain.py
+│   ├── query_api.py
+│   ├── app.py
+│   └── requirements.txt
+│
+├── storage/
+├── vectordb/
+├── uploads/
+└── README.md
+```
+
+---
+
+# 🚀 Installation Guide
+
+## Prerequisites
+
+Install:
+
+* PHP 8.2+
+* Composer
+* Python 3.10+
+* MySQL
+* Git
+
+---
+
+# 1. Clone Repository
+
+```bash
+git clone https://github.com/yourusername/rag-document-analysis.git
+
+cd rag-document-analysis
+```
+
+---
+
+# 2. Setup Laravel Backend
+
+```bash
+cd laravel
+
+composer install
+
+cp .env.example .env
+
+php artisan key:generate
+```
+
+Configure database:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=rag_db
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Run migration:
+
+```bash
+php artisan migrate
+```
+
+Create storage link:
+
+```bash
+php artisan storage:link
+```
+
+Start Laravel server:
+
+```bash
+php artisan serve
+```
+
+Default:
+
+```text
+http://127.0.0.1:8000
+```
+
+---
+
+# 3. Setup AI Service
+
+Navigate to AI directory:
+
+```bash
+cd ai
+```
+
+Create virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+Activate:
+
+### Windows
+
+```bash
+.venv\Scripts\activate
+```
+
+### Linux
+
+```bash
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+# 4. Configure Environment Variables
+
+Create:
+
+```env
+GEMINI_API_KEY=YOUR_API_KEY
+```
+
+or
+
+```env
+HF_TOKEN=YOUR_HUGGINGFACE_TOKEN
+```
+
+depending on the selected LLM provider.
+
+---
+
+# 5. Start Flask AI Server
+
+```bash
+python app.py
+```
+
+or
+
+```bash
+flask run
+```
+
+Default:
+
+```text
+http://127.0.0.1:5000
+```
+
+---
+
+# ▶ Running the System
+
+Ensure both services are running:
+
+### Terminal 1
+
+```bash
+php artisan serve
+```
+
+### Terminal 2
+
+```bash
+python app.py
+```
+
+Open:
+
+```text
+http://127.0.0.1:8000
+```
+
+---
+
+# 👨‍🏫 How to Use
+
+## Lecturer Workflow
+
+### Login
+
+Login using lecturer account.
+
+### Upload Documents
+
+Navigate to:
+
+```text
+Document Management
+```
+
+Upload:
+
+* PDF
+* DOCX
+
+### Automatic Processing
+
+The system automatically performs:
+
+```text
+Parsing
+↓
+Cleaning
+↓
+Chunking
+↓
+Embedding
+↓
+Vector Indexing
+```
+
+### Verify Indexing
+
+Ensure document status becomes:
+
+```text
+Indexed
+```
+
+---
+
+## Student Workflow
+
+### Login
+
+Login using student account.
+
+### Ask Questions
+
+Example:
+
+```text
+Apa tujuan dari penelitian ini?
+```
+
+```text
+Apa isi modul pembelajaran pada bab 3?
+```
+
+```text
+Bagaimana prosedur administrasi akademik?
+```
+
+### Receive Results
+
+The system returns:
+
+* Generated answer
+* Source document references
+* Relevant document chunks
+
+---
+
+# 📊 Evaluation
+
+The project evaluates:
+
+## Retrieval Performance
+
+* Recall@K
+* Precision@K
+* Accuracy
+* Response Time
+
+## Answer Quality
+
+* Correctness
+* Relevance
+* Completeness
+* Faithfulness
+
+## Vector Database Comparison
+
+* FAISS
+* ChromaDB
+
+## Top-K Analysis
+
+Performance comparison using different retrieval values:
+
+```text
+K = 3
+K = 5
+K = 10
+```
+
+---
+
+# 🔒 Access Control
+
+| Feature          | Student | Lecturer |
+| ---------------- | ------- | -------- |
+| Register         | ✅       | ❌        |
+| Login            | ✅       | ✅        |
+| Ask Question     | ✅       | ✅        |
+| Query History    | ✅       | ✅        |
+| Upload Document  | ❌       | ✅        |
+| Manage Documents | ❌       | ✅        |
+
+---
+
+# 🎯 Future Improvements
+
+* Hybrid Search (BM25 + Vector Search)
+* OCR Support
+* Multi-file Citation
+* Streaming Responses
+* Reranking Models
+* Role-based Administration
+* Cloud Deployment
+
+---
+
+# 👥 Authors
+
+### Junior Dirgantara Betan
+
+Project Leader
+
+### Ferdian Baihaqi
+
+Developer
+
+---
+
+# 📜 License
+
+This project was developed as a Project-Based Learning (PBL) Final Project at Politeknik Negeri Batam.
+
+Academic use only.
