@@ -17,7 +17,7 @@
                     </svg>
                 </div>
 
-                <span class="text-sm text-[#1a3a52]/50 flex-1">
+                <span class="text-sm text-[#1a3a52]/80 flex-1">
                     Upload dokumen untuk diproses ke database Lumina.
                 </span>
 
@@ -33,12 +33,12 @@
                     type="file"
                     x-ref="fileInput"
                     class="hidden"
-                    accept=".pdf,.txt,.doc,.docx"
+                    accept=".pdf,.doc,.docx"
                     @change="handleFile($event)">
             </div>
 
-            <p class="mt-3 text-[11px] text-[#1a3a52]/40 px-1">
-                PDF, TXT, DOC, dan DOCX didukung · Maks. 10 MB
+            <p class="mt-3 text-[11px] text-[#1a3a52]/80 px-1">
+                PDF, DOC, dan DOCX didukung · Maks. 100 MB
             </p>
         </div>
     </template>

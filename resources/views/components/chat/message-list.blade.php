@@ -7,8 +7,7 @@
     {{-- Empty / idle state --}}
     <template x-if="messages.length === 0">
         <div class="flex flex-col items-center justify-center h-full text-center py-20">
-            <p class="text-black text-lg leading-relaxed"
-               style="font-family: 'Space Grotesk', sans-serif;">
+            <p class="text-lg leading-relaxed" style="color: #2e5f7e; font-family: 'Space Grotesk', sans-serif;">
                 Halo, Lumina disini siap membantu.<br>
                 Tanyakan pertanyaanmu dan Lumina<br>
                 akan membantu menjawabnya berdasarkan<br>
@@ -32,10 +31,13 @@
             </template>
 
             {{-- Bubble --}}
-            <div class="max-w-xl px-4 py-3 rounded-2xl text-sm leading-relaxed"
+            <div class="max-w-xl px-4 py-3 rounded-2xl text-base leading-relaxed"
                  :class="msg.role === 'user'
-                     ? 'bg-[#5BB7EC] text-black/80 rounded-tr-sm'
-                     : 'bg-[#92C7DD] text-black/80 rounded-tl-sm'">
+                     ? 'bg-[#5BB7EC]/60 rounded-tr-sm'
+                     : 'bg-[#92C7DD]/60 rounded-tl-sm'"
+                 :style="msg.role === 'user'
+                     ? 'color: #000000;'
+                     : 'color: #000000;'">
 
                 {{-- Assistant: render markdown --}}
                 <template x-if="msg.role === 'assistant'">
@@ -61,11 +63,11 @@
             </div>
             <div class="bg-[#92C7DD] px-4 py-3 rounded-2xl rounded-tl-sm
                         flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 bg-[#334155] rounded-full animate-bounce"
+                <span class="w-1.5 h-1.5 rounded-full animate-bounce bg-[#1a3a52]/60"
                       style="animation-delay:0ms"></span>
-                <span class="w-1.5 h-1.5 bg-[#334155] rounded-full animate-bounce"
+                <span class="w-1.5 h-1.5 rounded-full animate-bounce bg-[#1a3a52]/60"
                       style="animation-delay:150ms"></span>
-                <span class="w-1.5 h-1.5 bg-[#334155] rounded-full animate-bounce"
+                <span class="w-1.5 h-1.5 rounded-full animate-bounce bg-[#1a3a52]/60"
                       style="animation-delay:300ms"></span>
             </div>
         </div>

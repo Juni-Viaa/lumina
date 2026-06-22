@@ -6,10 +6,11 @@ use App\Models\Upload;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
-use Illuminate\Support\Facades\DB;
 
 class UploadController extends Controller
 {
@@ -20,7 +21,8 @@ class UploadController extends Controller
         'text/plain'                                                               => 'txt',
     ];
 
-    private const MAX_SIZE_KB = 102400;
+    private const MAX_SIZE_KB  = 102400;
+    private const RAG_SERVER   = 'http://127.0.0.1:5001';
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -41,7 +43,7 @@ class UploadController extends Controller
             'document' => [
                 'required',
                 'file',
-                'max:'    . self::MAX_SIZE_KB,
+                'max:'  . self::MAX_SIZE_KB,
                 'mimes:pdf,doc,docx,txt',
             ],
         ]);
@@ -60,13 +62,13 @@ class UploadController extends Controller
         $absolutePath = Storage::disk('local')->path($storedPath);
 
         // Upsert — bypass Eloquent events entirely using raw DB
-        $existing = \DB::table('documents')
+        $existing = DB::table('documents')
             ->where('user_id', $userId)
             ->where('document_name', $file->getClientOriginalName())
             ->first();
 
         if ($existing) {
-            \DB::table('documents')
+            DB::table('documents')
                 ->where('document_id', $existing->document_id)
                 ->update([
                     'deleted_at' => null,
@@ -78,7 +80,7 @@ class UploadController extends Controller
                 ]);
             $documentId = $existing->document_id;
         } else {
-            $documentId = \DB::table('documents')->insertGetId([
+            $documentId = DB::table('documents')->insertGetId([
                 'user_id'       => $userId,
                 'document_name' => $file->getClientOriginalName(),
                 'path_file'     => $storedPath,
@@ -91,19 +93,15 @@ class UploadController extends Controller
             ]);
         }
 
-        $ingestResult = $this->dispatchIngest($documentId, $absolutePath, $userId);
-
-        Log::info('Upload complete', [
-            'document_id'  => $documentId,
-            'file_exists'  => file_exists($absolutePath),
-            'ingest_error' => $ingestResult['error'] ?? null,
-        ]);
+        // Call Flask /ingest endpoint
+        // Run async so the HTTP response returns immediately to the UI
+        // The UI polls the document status separately
+        $this->dispatchIngest($documentId, $absolutePath, $userId);
 
         return response()->json([
             'message'     => 'Dokumen berhasil diupload dan sedang diproses.',
             'document_id' => $documentId,
             'status'      => 'processing',
-            'debug'       => $ingestResult,
         ], 201);
     }
 
@@ -115,10 +113,60 @@ class UploadController extends Controller
             abort(403);
         }
 
+        // 1. Remove physical file from storage
         Storage::disk('local')->delete($upload->path_file);
+
+        // 2. Hard-delete all chunks from MySQL
+        DB::table('chunks')
+            ->where('document_id', $upload->document_id)
+            ->delete();
+
+        // 3. Soft-delete the document record
         $upload->delete();
 
+        // 4. Dispatch FAISS rebuild in the background (fire and forget)
+        // The HTTP response returns immediately — user doesn't wait for rebuild
+        $this->dispatchFaissRebuild();
+
         return response()->json(['message' => 'Dokumen berhasil dihapus.']);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Fire a non-blocking socket request to /rebuild-index.
+     * PHP closes the socket immediately without reading the response,
+     * so Laravel returns to the user while Flask rebuilds in the background.
+     */
+    private function dispatchFaissRebuild(): void
+    {
+        try {
+            $host = '127.0.0.1';
+            $port = 5001;
+            $path = '/rebuild-index';
+            $body = '{}';
+
+            $http = "POST {$path} HTTP/1.1\r\n"
+                  . "Host: {$host}:{$port}\r\n"
+                  . "Content-Type: application/json\r\n"
+                  . "Content-Length: " . strlen($body) . "\r\n"
+                  . "Connection: close\r\n"
+                  . "\r\n"
+                  . $body;
+
+            $socket = fsockopen($host, $port, $errno, $errstr, 3);
+            if ($socket) {
+                fwrite($socket, $http);
+                fclose($socket); // close immediately — don't wait for response
+            }
+
+            Log::info('FAISS rebuild dispatched in background after document deletion');
+
+        } catch (\Throwable $e) {
+            // Non-fatal — DB deletion already succeeded
+            // Index will be stale until next rebuild or server restart
+            Log::error('FAISS rebuild dispatch failed', ['error' => $e->getMessage()]);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -139,82 +187,57 @@ class UploadController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────────
 
-    private function dispatchIngest(int $documentId, string $absolutePath, int $userId): array
+    /**
+     * Dispatch ingest to Flask server as a fire-and-forget background call.
+     * We use a non-blocking socket so the upload HTTP response returns
+     * immediately while Flask processes the document in the background.
+     */
+    private function dispatchIngest(int $documentId, string $absolutePath, int $userId): void
     {
-        $python  = config('rag.python_path', 'python');
-        $script  = config('rag.ingest_script', base_path('ai/ingest.py'));
-        $logOut  = storage_path('logs/ingest_out.log');
-        $logErr  = storage_path('logs/ingest_err.log');
+        $payload = json_encode([
+            'file_path'   => $absolutePath,
+            'document_id' => $documentId,
+            'user_id'     => $userId,
+        ]);
 
-        if (! file_exists($script)) {
-            $error = "ingest.py not found at: {$script}";
-            Log::error($error);
-            return ['command' => null, 'error' => $error];
-        }
-
-        if (! file_exists($absolutePath)) {
-            $error = "Uploaded file not found at: {$absolutePath}";
-            Log::error($error);
-            return ['command' => null, 'error' => $error];
-        }
-
+        // Fire-and-forget using raw socket — does NOT wait for response.
+        // Flask processes the ingest in the background.
+        // The UI polls /upload/list to detect when status changes to 'indexed'.
         try {
-            if (PHP_OS_FAMILY === 'Windows') {
-                // Write a temporary .bat file and execute it.
-                // This avoids ALL PowerShell/cmd escaping hell — the bat file
-                // contains the exact command with no quoting layers.
-                $batPath = storage_path("logs/ingest_{$documentId}.bat");
-                $logOutWin = str_replace('/', '\\', $logOut);
-                $logErrWin = str_replace('/', '\\', $logErr);
+            $host    = '127.0.0.1';
+            $port    = 5001;
+            $path    = '/ingest';
+            $length  = strlen($payload);
 
-                $batContent = "@echo off\r\n"
-                    . "set PYTHONIOENCODING=utf-8\r\n"
-                    . "set PYTHONUTF8=1\r\n"
-                    . "set DB_HOST=" . env('DB_HOST', '127.0.0.1') . "\r\n"
-                    . "set DB_PORT=" . env('DB_PORT', '3306') . "\r\n"
-                    . "set DB_USERNAME=" . env('DB_USERNAME', 'root') . "\r\n"
-                    . "set DB_PASSWORD=" . env('DB_PASSWORD', '') . "\r\n"
-                    . "set DB_DATABASE=" . env('DB_DATABASE', 'lumina') . "\r\n"
-                    . "\"{$python}\" -X utf8 \"{$script}\""
-                    . " --document-id {$documentId}"
-                    . " --user-id {$userId}"
-                    . " \"{$absolutePath}\""
-                    . " 1>\"{$logOutWin}\""
-                    . " 2>\"{$logErrWin}\"\r\n";
+            $http = "POST {$path} HTTP/1.1\r\n"
+                  . "Host: {$host}:{$port}\r\n"
+                  . "Content-Type: application/json\r\n"
+                  . "Content-Length: {$length}\r\n"
+                  . "Connection: close\r\n"
+                  . "\r\n"
+                  . $payload;
 
-                file_put_contents($batPath, $batContent);
-
-                // start /B runs the bat in background, detached from PHP
-                $cmd = "start /B \"\" \"{$batPath}\"";
-                pclose(popen($cmd, 'r'));
-
-                Log::info('Ingest bat dispatched', [
-                    'document_id' => $documentId,
-                    'bat_file'    => $batPath,
-                    'bat_content' => $batContent,
-                ]);
-
-                return ['command' => $batContent, 'bat_path' => $batPath, 'error' => null];
-
-            } else {
-                $cmd = implode(' ', [
-                    escapeshellarg($python),
-                    escapeshellarg($script),
-                    '--document-id', (string) $documentId,
-                    '--user-id',     (string) $userId,
-                    escapeshellarg($absolutePath),
-                    '>>', escapeshellarg($logOut),
-                    '2>>', escapeshellarg($logErr),
-                    '&',
-                ]);
-                exec($cmd);
-
-                return ['command' => $cmd, 'error' => null];
+            $socket = fsockopen($host, $port, $errno, $errstr, 3);
+            if ($socket) {
+                fwrite($socket, $http);
+                fclose($socket); // Close immediately — don't wait for response
             }
 
+            Log::info('Ingest dispatched to Flask', [
+                'document_id' => $documentId,
+                'file'        => basename($absolutePath),
+            ]);
+
         } catch (\Throwable $e) {
-            Log::error('Ingest dispatch failed', ['error' => $e->getMessage()]);
-            return ['command' => null, 'error' => $e->getMessage()];
+            // If Flask isn't running, mark document as failed
+            Log::error('Ingest dispatch failed', [
+                'document_id' => $documentId,
+                'error'       => $e->getMessage(),
+            ]);
+
+            DB::table('documents')
+                ->where('document_id', $documentId)
+                ->update(['status' => 'failed']);
         }
     }
 }
