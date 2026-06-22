@@ -47,28 +47,34 @@ The system is designed for academic environments where users need to search info
 The application uses a client-server architecture consisting of two main services:
 
 ```text
-┌─────────────────┐
-│   Frontend UI   │
-│ Tailwind + JS   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Laravel Backend │
-│ Authentication  │
-│ User Management │
-│ Document CRUD   │
-└────────┬────────┘
-         │ API
-         ▼
-┌─────────────────┐
-│ Flask AI Server │
-│ LangChain RAG   │
-└────────┬────────┘
-         │
- ┌───────┼────────┐
- ▼       ▼        ▼
-FAISS  ChromaDB  LLM
+┌──────────────────────────┐
+│      Laravel Web App     │
+│──────────────────────────│
+│ Authentication           │
+│ User Management          │
+│ Document Management      │
+│ Query Interface          │
+└────────────┬─────────────┘
+             │ HTTP API
+             ▼
+┌──────────────────────────┐
+│      Flask AI Server     │
+│      (rag_server.py)     │
+└────────────┬─────────────┘
+             │
+     ┌───────┼────────┐
+     ▼                ▼
+ ingest.py      query_api.py
+(Document       Retrieval &
+ Indexing)      Generation
+     │                │
+     ▼                ▼
+ Embeddings      FAISS Search
+     │                │
+     └──────┬─────────┘
+            ▼
+      Vector Store
+         (FAISS)
 ```
 
 ---
@@ -120,12 +126,12 @@ Preserve context between chunks by overlapping adjacent text segments.
 
 Each chunk is transformed into vector representations using HuggingFace embedding models.
 
-Example models:
+Models used:
 
 ```text
-LazarusNLP/all-indo-e5-small-v4
-intfloat/multilingual-e5-small
-sentence-transformers/all-MiniLM-L6-v2
+
+intfloat/multilingual-e5-large
+
 ```
 
 ---
@@ -135,7 +141,6 @@ sentence-transformers/all-MiniLM-L6-v2
 Embeddings are stored in:
 
 * FAISS
-* ChromaDB
 
 for semantic similarity search.
 
@@ -223,11 +228,11 @@ The model generates:
 ## Vector Database
 
 * FAISS
-* ChromaDB
 
 ## Embedding Models
 
 * HuggingFace Embeddings
+* intfloat/multilingual-e5-large
 
 ## Database
 
@@ -235,36 +240,40 @@ The model generates:
 
 ## LLM
 
-* HuggingFace Models
-* Gemini API (optional)
+* Gemini-3.1-flash-lite
 
 ---
 
 # 📂 Project Structure
 
 ```text
-project-root/
+lumina/
 │
-├── laravel/
-│   ├── app/
-│   ├── routes/
-│   ├── resources/
-│   └── database/
+├── ai/                        # AI Service (Python + Flask + RAG)
+│   ├── vectorstore/          # FAISS indexes
+│   ├── config.py
+│   ├── ingest.py             # Document preprocessing & indexing
+│   ├── query_api.py          # RAG query pipeline
+│   ├── rag_server.py         # Flask API server
+│   ├── rebuild_faiss.py      # Rebuild vector index
+│   ├── requirements.txt
+│   └── README.md
 │
-├── ai/
-│   ├── ingestion.py
-│   ├── preprocessing.py
-│   ├── embedding.py
-│   ├── vectorstore.py
-│   ├── retriever.py
-│   ├── rag_chain.py
-│   ├── query_api.py
-│   ├── app.py
-│   └── requirements.txt
-│
+├── app/                      # Laravel Application
+├── bootstrap/
+├── config/
+├── database/
+├── public/
+├── resources/
+├── routes/
 ├── storage/
-├── vectordb/
-├── uploads/
+├── tests/
+│
+├── artisan
+├── composer.json
+├── package.json
+├── vite.config.js
+├── .env
 └── README.md
 ```
 
@@ -287,9 +296,9 @@ Install:
 # 1. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/rag-document-analysis.git
+git clone https://github.com/Juni-Viaa/lumina.git
 
-cd rag-document-analysis
+cd lumina
 ```
 
 ---
@@ -312,7 +321,7 @@ Configure database:
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=rag_db
+DB_DATABASE=lumina
 DB_USERNAME=root
 DB_PASSWORD=
 ```
@@ -339,6 +348,12 @@ Default:
 
 ```text
 http://127.0.0.1:8000
+```
+
+Start Nodejs:
+
+```bash
+npm run dev
 ```
 
 ---
@@ -385,28 +400,16 @@ Create:
 
 ```env
 GEMINI_API_KEY=YOUR_API_KEY
+RAG_PYTHON_PATH="C:\laravel\lumina\ai\.venv\Scripts\python.exe"
+RAG_INGEST_SCRIPT="C:\laravel\lumina\ai\ingest.py"
 ```
-
-or
-
-```env
-HF_TOKEN=YOUR_HUGGINGFACE_TOKEN
-```
-
-depending on the selected LLM provider.
 
 ---
 
 # 5. Start Flask AI Server
 
 ```bash
-python app.py
-```
-
-or
-
-```bash
-flask run
+python rag_server.py
 ```
 
 Default:
@@ -429,8 +432,14 @@ php artisan serve
 
 ### Terminal 2
 
+```
+npm run dev
+```
+
+### Terminal 3
+
 ```bash
-python app.py
+python rag_server.py
 ```
 
 Open:
@@ -584,11 +593,11 @@ K = 10
 
 ### Junior Dirgantara Betan
 
-Project Leader
+Team Leader
 
 ### Ferdian Baihaqi
 
-Developer
+Member
 
 ---
 
