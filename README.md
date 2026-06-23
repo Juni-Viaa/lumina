@@ -101,11 +101,11 @@ Answer + Source References → Saved to MySQL → Displayed to User
 ### Document Ingestion Pipeline
 
 ```
-Upload (PDF / DOCX / TXT)
+Upload (PDF / DOCX)
      │
      ├─ Copy to ai/documents/
      │
-     ├─ Document Parsing (PyPDF / Docx2txt / TextLoader)
+     ├─ Document Parsing (PyPDF / Docx2txt)
      │
      ├─ Text Cleaning (remove excess whitespace, blank pages)
      │
