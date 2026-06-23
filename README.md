@@ -39,7 +39,7 @@ Lumina processes uploaded documents into a semantic vector index, enabling users
 
 | Feature | Description |
 |---|---|
-| 📤 **Document Upload** | Upload PDF, DOCX, and TXT documents via web UI |
+| 📤 **Document Upload** | Upload PDF and DOCX documents via web UI |
 | 🔄 **Automatic Ingestion** | Documents are automatically chunked, embedded, and indexed into FAISS |
 | 💬 **Natural Language Query** | Ask questions in Indonesian or English via chat interface |
 | 🤖 **RAG-Powered Answers** | Gemini LLM generates answers grounded in your documents |
