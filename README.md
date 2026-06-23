@@ -10,7 +10,7 @@
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=flat&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
 [![LangChain](https://img.shields.io/badge/LangChain-0.3-1C3C3C?style=flat)](https://langchain.com)
 [![FAISS](https://img.shields.io/badge/FAISS-Vector_DB-0464A4?style=flat)](https://faiss.ai)
-[![Gemini](https://img.shields.io/badge/Gemini-2.0_Flash-4285F4?style=flat&logo=google&logoColor=white)](https://ai.google.dev)
+[![Gemini](https://img.shields.io/badge/Gemini-3.1_Flash--Lite-4285F4?style=flat&logo=google&logoColor=white)](https://deepmind.google/models/gemini/flash-lite/)
 
 **Project:** IF-4MD-08 · **Institution:** Politeknik Negeri Batam · **Year:** 2026
 
@@ -70,7 +70,7 @@ Lumina processes uploaded documents into a semantic vector index, enabling users
     │  chunks     │    │  • HuggingFace Embeddings (E5-L)   │
     │  queries    │    │  • FAISS Vector Index              │
     │  answers    │    │  • LangChain RAG Chain             │
-    │  histories  │    │  • Gemini 2.0 Flash Lite LLM       │
+    │  histories  │    │  • Gemini 3.1 Flash Lite LLM       │
     └─────────────┘    └───────────────────────────────────-┘
 ```
 
@@ -92,7 +92,7 @@ Top-K Relevant Chunks Retrieved
 Prompt Construction (System Prompt + Context + Question)
      │
      ▼
-Gemini 2.0 Flash Lite (LLM Generation)
+Gemini 3.1 Flash Lite (LLM Generation)
      │
      ▼
 Answer + Source References → Saved to MySQL → Displayed to User
@@ -128,7 +128,7 @@ Upload (PDF / DOCX / TXT)
 | RAG Framework | LangChain 0.3 |
 | Embedding Model | `intfloat/multilingual-e5-large` (HuggingFace) |
 | Vector Database | FAISS (Facebook AI Similarity Search) |
-| LLM | Google Gemini 2.0 Flash Lite |
+| LLM | Google Gemini 3.1 Flash Lite |
 | Database | MySQL (XAMPP / MariaDB) |
 
 ### Frontend
@@ -327,7 +327,7 @@ Navigate to `/register` and create an account. Roles:
 | `CHUNK_SIZE` | `2560` | Characters per chunk |
 | `CHUNK_OVERLAP` | `256` | Overlap between chunks (~10%) |
 | `TOP_K` | `5` | Number of chunks retrieved per query |
-| `GEMINI_MODEL` | `gemini-2.0-flash-lite` | Gemini model name |
+| `GEMINI_MODEL` | `gemini-3.1-flash-lite` | Gemini model name |
 | `GEMINI_TEMPERATURE` | `0.2` | LLM creativity (0 = deterministic) |
 | `GEMINI_MAX_TOKENS` | `1024` | Max answer length |
 
