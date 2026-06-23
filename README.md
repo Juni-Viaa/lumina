@@ -1,6 +1,7 @@
 <div align="center">
 
-# 🔍 Lumina
+<img src="public/images/icons/Logo.png" alt="Lumina Logo" width="220"/>
+# Lumina
 ### RAG-Based Intelligent Document Analysis System
 
 *Sistem analisis dokumen cerdas berbasis Retrieval-Augmented Generation*
