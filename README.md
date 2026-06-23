@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/images/icons/Logo.png" alt="Lumina Logo" width="180"/>
+<img src="public/images/icons/Logo.png" alt="Lumina Logo" width="220"/>
 
 # Lumina
 ### RAG-Based Intelligent Document Analysis System
