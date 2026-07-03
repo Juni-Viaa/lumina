@@ -10,9 +10,6 @@ from pathlib import Path
 from dotenv import load_dotenv
  
 # ── Load .env ──────────────────────────────────────────────────────────────────
-# Resolves relative to this file's location (ai/config.py), so it always
-# finds the correct .env regardless of the working directory when called.
-# Priority: Laravel root .env (../) → local ai/.env → system environment
 _root_env  = Path(__file__).parent.parent / ".env"
 _local_env = Path(__file__).parent / ".env"
  
@@ -40,10 +37,8 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME     = os.getenv("DB_DATABASE", "lumina")
 
 # ── Embedding ──────────────────────────────────────────────────────────────────
-# intfloat/multilingual-e5-large covers 100+ languages incl. Bahasa Indonesia.
-# e5 models require "passage: " prefix on documents, "query: " on queries.
 EMBEDDING_MODEL  = "intfloat/multilingual-e5-large"
-EMBEDDING_DEVICE = "cpu"   # "cuda" for GPU
+EMBEDDING_DEVICE = "cpu"
 
 # ── Chunking ───────────────────────────────────────────────────────────────────
 CHUNK_SIZE    = 2560
@@ -53,7 +48,7 @@ CHUNK_OVERLAP = 256
 FAISS_INDEX_PATH = str(VECTORSTORE_DIR / "faiss_index")
 
 # ── Retrieval ──────────────────────────────────────────────────────────────────
-TOP_K = 5   # chunks to retrieve per query
+TOP_K = 5
 
 # ── Gemini LLM ─────────────────────────────────────────────────────────────────
 GEMINI_MODEL       = "gemini-3.1-flash-lite"

@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Upload extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     // ── Table & primary key ────────────────────────────────────────────────────
     protected $table      = 'documents';
@@ -17,9 +18,9 @@ class Upload extends Model
 
     // ── Timestamps ────────────────────────────────────────────────────────────
     // Laravel default CREATED_AT is already 'created_at' — stated explicitly
-    // for clarity. UPDATED_AT maps to your 'edited_at' column.
+    // for clarity. UPDATED_AT maps to your 'updated_at' column.
     const CREATED_AT = 'created_at';
-    const UPDATED_AT = 'edited_at';
+    const UPDATED_AT = 'updated_at';
 
     // SoftDeletes reads this via static::DELETED_AT.
     // Must be plain `const` — `protected const` blocks trait access.
@@ -40,7 +41,7 @@ class Upload extends Model
     // ── Casts ─────────────────────────────────────────────────────────────────
     protected $casts = [
         'created_at' => 'datetime',
-        'edited_at'  => 'datetime',
+        'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
         'size'       => 'integer',
     ];
@@ -49,7 +50,7 @@ class Upload extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 
     public function chunks(): HasMany

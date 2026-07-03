@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Chunk extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     // ── Table & primary key ────────────────────────────────────────────────────
     protected $table      = 'chunks';
@@ -16,7 +17,7 @@ class Chunk extends Model
 
     // ── Timestamps ────────────────────────────────────────────────────────────
     const CREATED_AT = 'created_at';
-    const UPDATED_AT = 'edited_at';
+    const UPDATED_AT = 'updated_at';
     const DELETED_AT = 'deleted_at';
 
     // ── Mass assignment ────────────────────────────────────────────────────────
@@ -28,7 +29,7 @@ class Chunk extends Model
     // ── Casts ─────────────────────────────────────────────────────────────────
     protected $casts = [
         'created_at' => 'datetime',
-        'edited_at'  => 'datetime',
+        'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 

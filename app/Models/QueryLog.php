@@ -6,16 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class QueryLog extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $table      = 'queries';
     protected $primaryKey = 'query_id';
 
     const CREATED_AT = 'created_at';
-    const UPDATED_AT = 'edited_at';
+    const UPDATED_AT = 'updated_at';
     const DELETED_AT = 'deleted_at';
 
     protected $fillable = [
@@ -28,7 +29,7 @@ class QueryLog extends Model
 
     protected $casts = [
         'created_at'       => 'datetime',
-        'edited_at'        => 'datetime',
+        'updated_at'       => 'datetime',
         'deleted_at'       => 'datetime',
         'response_time_ms' => 'integer',
     ];
@@ -37,7 +38,7 @@ class QueryLog extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 
     public function answer(): HasOne

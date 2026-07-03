@@ -76,7 +76,7 @@ class UploadController extends Controller
                     'file_type'  => $file->getClientOriginalExtension(),
                     'size'       => $file->getSize(),
                     'status'     => 'processing',
-                    'edited_at'  => now(),
+                    'updated_at'  => now(),
                 ]);
             $documentId = $existing->document_id;
         } else {
@@ -88,7 +88,7 @@ class UploadController extends Controller
                 'size'          => $file->getSize(),
                 'status'        => 'processing',
                 'created_at'    => now(),
-                'edited_at'     => now(),
+                'updated_at'     => now(),
                 'deleted_at'    => null,
             ]);
         }

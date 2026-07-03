@@ -7,7 +7,7 @@
     {{-- Empty / idle state --}}
     <template x-if="messages.length === 0">
         <div class="flex flex-col items-center justify-center h-full text-center py-20">
-            <p class="text-lg leading-relaxed" style="color: #2e5f7e; font-family: 'Space Grotesk', sans-serif;">
+            <p class="text-lg leading-relaxed" style="color:  black; font-family: 'Space Grotesk', sans-serif;">
                 Halo, Lumina disini siap membantu.<br>
                 Tanyakan pertanyaanmu dan Lumina<br>
                 akan membantu menjawabnya berdasarkan<br>
