@@ -618,9 +618,4 @@ def rebuild_status():
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    if not config.GEMINI_API_KEY:
-        print("ERROR: GEMINI_API_KEY not set in .env", flush=True)
-        sys.exit(1)
-
-    _load_components()
     app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
