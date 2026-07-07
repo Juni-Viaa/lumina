@@ -1,30 +1,52 @@
-# Core LangChain
+# ============================
+# AI Framework (LangChain)
+# ============================
 langchain
 langchain-core
-langchain-text-splitters
-langchain-google-genai
-langchain-huggingface
 langchain-community
+langchain-text-splitters
+langchain-huggingface
+langchain-google-genai
 
-# Vector DB
+# ============================
+# Vector Database
+# ============================
 faiss-cpu
 
-# Embeddings
+# ============================
+# Embedding Models
+# ============================
 sentence-transformers
 
-# Document loaders
+# ============================
+# Document Processing
+# ============================
 pypdf
 python-docx
 docx2txt
 
-# LLM provider
+# ============================
+# Large Language Model (Google Gemini)
+# ============================
 google-generativeai
 
-# Utilities
+# ============================
+# Database
+# ============================
+pymysql
+
+# ============================
+# Environment Configuration
+# ============================
 python-dotenv
-pymysql
-rich
-dotenv
-pymysql
+
+# ============================
+# Web API
+# ============================
 flask
 gunicorn
+
+# ============================
+# Utilities
+# ============================
+rich
