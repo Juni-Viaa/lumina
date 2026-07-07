@@ -1,7 +1,4 @@
-{{--
-    Component: chat.input-bar
-    Requires x-data="chatApp()" on parent
---}}
+{{-- input-bar.blade.php --}}
 <div class="glass-inner border-t border-white/10 px-4 py-4 mx-4 mt-4
             rounded-2xl backdrop-blur-md shrink-0">
     <div class="flex items-end gap-3">
@@ -22,7 +19,7 @@
         </textarea>
 
         <button
-            @click="sendMessage()"
+            @click.prevent="sendMessage()"
             :disabled="loading || !input.trim()"
             class="glass-inner w-12 h-12 rounded-xl flex items-center justify-center
                    shrink-0 text-[#1a6fa8] hover:bg-white/30 disabled:opacity-40

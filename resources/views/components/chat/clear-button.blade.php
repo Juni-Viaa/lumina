@@ -1,3 +1,4 @@
+{{-- clear-button.blade.php --}}
 <button
     @click="clearChat()"
     class="text-xs text-stone-500 hover:text-stone-300 border border-stone-800

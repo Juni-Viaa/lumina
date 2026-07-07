@@ -1,8 +1,5 @@
-{{--
-    Component: chat.message-list
-    Requires x-data="chatApp()" on parent
---}}
-<div class="flex-1 overflow-y-auto px-4 py-6 space-y-6" x-ref="messages">
+{{-- message-list.blade.php --}}
+<div class="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollable" x-ref="messages">
 
     {{-- Empty / idle state --}}
     <template x-if="messages.length === 0">
@@ -24,7 +21,7 @@
             {{-- AI avatar --}}
             <template x-if="msg.role === 'assistant'">
                 <div class="w-10 h-10 rounded-lg bg-white flex items-center
-                            justify-center shrink-0 mt-0.5">
+                            justify-center shrink-0 mt-0.5 border border-slate-200 shadow-sm">
                     <img src="{{ asset('images/icons/Logo.png') }}"
                         class="w-12 h-8 opacity-70" alt="Lumina">
                 </div>
@@ -42,7 +39,7 @@
                 {{-- Assistant: render markdown --}}
                 <template x-if="msg.role === 'assistant'">
                     <div
-                        class="prose prose-slate max-w-none prose-headings:font-semibold prose-p:leading-7 prose-li:leading-7 prose-pre:bg-slate-900 prose-pre:text-white"
+                        class="prose prose-slate max-w-none prose-headings:font-semibold prose-p:leading-7 prose-li:leading-7 prose-pre:bg-slate-900 prose-pre:text-white prose-chat"
                         x-html="renderMarkdown(msg.content)">
                     </div>
                 </template>

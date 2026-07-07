@@ -1,3 +1,4 @@
+{{-- markdown-styles.blade.php --}}
 <style>
 /* ── Base prose ────────────────────────────────────────────────────────── */
 .prose-chat {

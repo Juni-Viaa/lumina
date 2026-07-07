@@ -27,3 +27,4 @@ rich
 dotenv
 pymysql
 flask
+gunicorn
