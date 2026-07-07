@@ -9,12 +9,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    // RAG server base URL — must match rag_server.py port
     private const RAG_SERVER = 'http://127.0.0.1:5001';
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -51,7 +49,7 @@ class DashboardController extends Controller
         $question = trim($request->input('question'));
         $userId   = Auth::id();
 
-        // 1. Check RAG server is reachable before doing anything ──────────────
+        // 1. Check RAG server health before doing anything ────────────────────
         $serverCheck = $this->checkServer();
         if (! $serverCheck['online']) {
             return response()->json([
@@ -69,10 +67,16 @@ class DashboardController extends Controller
                 'status'      => 'pending',
             ]);
         } catch (\Throwable $e) {
-            Log::error('QueryLog::create failed', ['error' => $e->getMessage()]);
+            Log::error('DashboardController@ask: QueryLog::create failed', [
+                'user_id'   => $userId,
+                'question'  => $question,
+                'exception' => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'answer' => null,
-                'error'  => 'Database error: ' . $e->getMessage(),
+                'error'  => 'Terjadi kesalahan saat menyimpan pertanyaan. Silakan coba lagi.',
             ], 500);
         }
 
@@ -87,14 +91,16 @@ class DashboardController extends Controller
             $result = $response->json();
 
             if (! $response->successful() || ! ($result['success'] ?? false)) {
-                Log::error('RAG server error', [
-                    'status'   => $response->status(),
-                    'query_id' => $queryLog->query_id,
-                    'result'   => $result,
+                Log::error('DashboardController@ask: RAG server returned error', [
+                    'query_id'    => $queryLog->query_id,
+                    'http_status' => $response->status(),
+                    'rag_error'   => $result['error'] ?? null,
+                    'rag_body'    => $result,
                 ]);
+
                 return response()->json([
                     'answer'   => null,
-                    'error'    => $result['error'] ?? 'RAG server returned an error.',
+                    'error'    => 'Lumina tidak dapat memproses pertanyaan Anda saat ini. Silakan coba lagi.',
                     'query_id' => $queryLog->query_id,
                 ], 500);
             }
@@ -108,16 +114,26 @@ class DashboardController extends Controller
             ]);
 
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('RAG server connection failed', ['error' => $e->getMessage()]);
+            Log::error('DashboardController@ask: Cannot connect to RAG server', [
+                'query_id'  => $queryLog->query_id,
+                'exception' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'answer' => null,
-                'error'  => 'Could not connect to RAG server. Is rag_server.py running?',
+                'error'  => 'Server AI tidak dapat dihubungi. Pastikan rag_server.py sedang berjalan.',
             ], 503);
+
         } catch (\Throwable $e) {
-            Log::error('RAG ask failed', ['error' => $e->getMessage()]);
+            Log::error('DashboardController@ask: Unexpected error', [
+                'query_id'  => $queryLog->query_id,
+                'exception' => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'answer' => null,
-                'error'  => 'Unexpected error: ' . $e->getMessage(),
+                'error'  => 'Terjadi kesalahan yang tidak terduga. Silakan coba lagi.',
             ], 500);
         }
     }
@@ -127,7 +143,8 @@ class DashboardController extends Controller
     public function history(): View
     {
         $chatHistory = QueryLog::where('user_id', Auth::id())
-            ->orderByDesc('created_at')->paginate(20);
+            ->orderByDesc('created_at')
+            ->paginate(20);
 
         return view('history.index', compact('chatHistory'));
     }
@@ -136,25 +153,32 @@ class DashboardController extends Controller
 
     public function historyJson(): JsonResponse
     {
-        $items = QueryLog::where('user_id', Auth::id())
-            ->orderByDesc('created_at')
-            ->limit(5)
-            ->get(['query_id', 'query_title', 'query_text', 'created_at'])
-            ->map(fn ($q) => [
-                'query_id'   => $q->query_id,
-                'title'      => $q->display_title,        // truncated for sidebar
-                'full_title' => $q->query_text,           // full text for tooltip
+        try {
+            $items = QueryLog::where('user_id', Auth::id())
+                ->orderByDesc('created_at')
+                ->limit(5)
+                ->get(['query_id', 'query_title', 'query_text', 'created_at'])
+                ->map(fn ($q) => [
+                    'query_id'   => $q->query_id,
+                    'title'      => $q->display_title,
+                    'full_title' => $q->query_text,
+                ]);
+
+            return response()->json(['items' => $items]);
+
+        } catch (\Throwable $e) {
+            Log::error('DashboardController@historyJson: Failed to fetch history', [
+                'user_id'   => Auth::id(),
+                'exception' => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
             ]);
 
-        return response()->json(['items' => $items]);
+            return response()->json(['items' => []]);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Check if the Flask RAG server is running.
-     * Returns ['online' => true] or ['online' => false, 'error' => '...']
-     */
     private function checkServer(): array
     {
         try {
@@ -164,24 +188,37 @@ class DashboardController extends Controller
                 $body = $response->json();
 
                 if (! ($body['model_loaded'] ?? false)) {
+                    Log::warning('DashboardController@checkServer: Model not loaded yet', [
+                        'health_body' => $body,
+                    ]);
+
                     return [
                         'online' => false,
-                        'error'  => 'RAG server is starting up — model not loaded yet. Wait a moment and try again.',
+                        'error'  => 'Server AI sedang memuat model. Mohon tunggu sebentar dan coba lagi.',
                     ];
                 }
 
                 return ['online' => true];
             }
 
+            Log::warning('DashboardController@checkServer: Health check returned non-200', [
+                'http_status' => $response->status(),
+                'body'        => $response->body(),
+            ]);
+
             return [
                 'online' => false,
-                'error'  => 'RAG server returned HTTP ' . $response->status() . '. Check rag_server.py logs.',
+                'error'  => 'Server AI merespons dengan error. Periksa log rag_server.py.',
             ];
 
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::warning('DashboardController@checkServer: Cannot reach RAG server', [
+                'exception' => $e->getMessage(),
+            ]);
+
             return [
                 'online' => false,
-                'error'  => 'RAG server is not running. Start it with: python ai/rag_server.py',
+                'error'  => 'Server AI tidak aktif. Jalankan: python ai/rag_server.py',
             ];
         }
     }

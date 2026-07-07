@@ -13,7 +13,7 @@
             <!-- Body -->
             <div class="p-8">
                 <!-- Logo -->
-                <div class="w-24 h-24 bg-white/30 mx-auto mb-6 rounded-lg backdrop-blur-sm">
+                <div class="w-24 h-24 mx-auto mb-6 rounded-lg">
                     <img src="{{ asset('images/icons/Logo.png') }}" alt="Logo" class="w-full h-full object-cover rounded-lg">
                 </div>
 

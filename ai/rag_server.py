@@ -241,10 +241,14 @@ def _upsert_faiss(chunks: list[Document], document_id: int) -> int:
 def _format_context(docs: list[Document]) -> str:
     parts = []
     for i, doc in enumerate(docs, 1):
-        src  = doc.metadata.get("source_file", "unknown")
+        # Use actual document name from metadata, not "Excerpt N"
+        source = doc.metadata.get("source_file", "Dokumen tidak diketahui")
+        # Strip file extension for cleaner display
+        doc_name = source.rsplit(".", 1)[0].replace("_", " ")
         page = doc.metadata.get("page", "")
-        loc  = src + (f", p.{int(page) + 1}" if page != "" else "")
-        parts.append(f"[Excerpt {i} — {loc}]\n{doc.page_content}")
+        page_str = f", hal. {int(page) + 1}" if page != "" else ""
+        header = f"[Sumber: {doc_name}{page_str}]"
+        parts.append(f"{header}\n{doc.page_content}")
     return "\n\n---\n\n".join(parts)
 
 
