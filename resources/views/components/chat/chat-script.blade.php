@@ -40,7 +40,7 @@
                     } catch {
                         this.messages.push({
                             role:    'assistant',
-                            content: '❌ Server returned non-JSON (HTTP ' + res.status + '):\n\n'
+                            content: 'Server returned non-JSON (HTTP ' + res.status + '):\n\n'
                                      + rawText.substring(0, 500),
                         });
                         return;
@@ -49,7 +49,7 @@
                     if (!res.ok || data.error) {
                         this.messages.push({
                             role:    'assistant',
-                            content: '❌ ' + (data.error ?? data.message ?? 'Terjadi kesalahan.'),
+                            content: '' + (data.error ?? data.message ?? 'Terjadi kesalahan.'),
                         });
                         console.error('[Lumina]', data);
                         return;
@@ -67,7 +67,7 @@
                 } catch (err) {
                     this.messages.push({
                         role:    'assistant',
-                        content: '❌ Fetch error: ' + err.message,
+                        content: 'Fetch error: ' + err.message,
                     });
                     console.error('[Lumina fetch error]', err);
                 } finally {

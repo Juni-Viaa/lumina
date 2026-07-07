@@ -66,31 +66,6 @@ _vectorstore = None
 _rag_chain   = None
 _retriever   = None
 
-_load_lock = threading.Lock()
-_loaded = False
-
-def _ensure_loaded():
-    """
-    Load embedding model dan FAISS hanya sekali.
-    Aman terhadap request bersamaan.
-    """
-    global _loaded
-
-    if _loaded:
-        return
-
-    with _load_lock:
-        if _loaded:
-            return
-
-        print("Loading AI components...", flush=True)
-
-        _load_components()
-
-        _loaded = True
-
-        print("AI components loaded.", flush=True)
-
 # ── Rebuild debounce state ────────────────────────────────────────────────────
 # Goal: deleting N documents in quick succession triggers exactly ONE rebuild,
 # scheduled 60s after the LAST delete. If a rebuild is already running when a
@@ -343,8 +318,6 @@ def _load_components():
 
 @app.route("/health", methods=["GET"])
 def health():
-    _ensure_loaded()
-
     return jsonify({
         "status":       "ok",
         "model_loaded": _embeddings  is not None,
@@ -355,8 +328,6 @@ def health():
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    _ensure_loaded()
-
     data     = request.get_json(force=True)
     question = (data.get("question") or "").strip()
     query_id = data.get("query_id")
@@ -406,8 +377,6 @@ def ask():
 
 @app.route("/ingest", methods=["POST"])
 def ingest():
-    _ensure_loaded()
-    
     """
     Ingest a document: load → clean → chunk → MySQL → FAISS.
     Body: { "file_path": "...", "document_id": N, "user_id": N }
@@ -546,7 +515,6 @@ def schedule_rebuild() -> str:
 def reload_index():
     """Reload FAISS index from disk without restarting the server."""
     global _vectorstore
-    _ensure_loaded()
     try:
         if not Path(config.FAISS_INDEX_PATH).exists():
             _vectorstore = None
@@ -566,7 +534,6 @@ def reload_index():
 
 @app.route("/rebuild-index", methods=["POST"])
 def rebuild_index():
-    _ensure_loaded()
     """
     Schedule a debounced FAISS rebuild after a document deletion.
 
@@ -623,4 +590,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
     _load_components()
-    app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
+    app.run(host="127.0.0.1", port=5001, debug=False, threaded=True)
