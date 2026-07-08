@@ -50,4 +50,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/upload/{upload}', [UploadController::class, 'destroy'])->name('uploads.destroy');
 });
 
+// ── Route Terms ───────────────────────────────
+Route::get('/terms', function () {
+    return view('components.terms');
+})->name('terms');
+
 require __DIR__.'/auth.php';

@@ -28,7 +28,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-       return redirect()->route('dashboard.index');
+        return redirect()->intended(route('dashboard.index', absolute: false))
+        ->with('success', 'Login berhasil. Selamat datang kembali di Lumina!');
     }
 
     /**

@@ -90,6 +90,57 @@
     </style>
     @stack('head')
 </head>
+@if (session('success'))
+    <div
+        x-data="{ show: true }"
+        x-show="show"
+        x-transition:enter="transform ease-out duration-300 transition"
+        x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+        x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 translate-x-0"
+        x-transition:leave-end="opacity-0 translate-x-2"
+        x-init="setTimeout(() => show = false, 3500)"
+        class="fixed top-5 right-5 z-[9999]"
+        style="display: none;"
+    >
+        <div class="w-[360px] overflow-hidden rounded-2xl border border-emerald-300/40 bg-emerald-400/20 backdrop-blur-xl shadow-2xl">
+            <div class="flex items-start gap-3 p-4">
+                <div class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+
+                <div class="flex-1 pr-2">
+                    <h4 class="text-sm font-semibold tracking-wide text-emerald-950">
+                        Berhasil
+                    </h4>
+                    <p class="mt-1 text-sm leading-5 text-emerald-900">
+                        {{ session('success') }}
+                    </p>
+                </div>
+
+                <button
+                    @click="show = false"
+                    class="rounded-lg p-1 text-emerald-900/70 transition hover:bg-emerald-500/10 hover:text-emerald-950"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="h-[3px] w-full bg-emerald-900/10">
+                <div
+                    class="h-[3px] bg-emerald-600"
+                    x-init="$el.style.width = '100%'; setTimeout(() => $el.style.width = '0%', 50)"
+                    style="transition: width 3.5s linear;"
+                ></div>
+            </div>
+        </div>
+    </div>
+@endif
 <body class="h-full">
 
     <div class="flex h-full p-4 gap-3">

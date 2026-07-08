@@ -68,7 +68,6 @@
     </div>
 
 </x-guest-layout>
-
 @if ($errors->any())
 <script>
     Swal.fire({

@@ -19,6 +19,17 @@
 </head>
 
 <body class="font-sans antialiased">
+    @if (session('success'))
+    <div style="position:fixed; top:20px; right:20px; z-index:99999; background:#16a34a; color:white; padding:14px 18px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.2);">
+        {{ session('success') }}
+    </div>
+@endif
+    {{-- Toast success untuk halaman guest (login/register) --}}
+   @if (session('success'))
+        <div style="position:fixed; top:20px; right:20px; z-index:99999; background:#16a34a; color:white; padding:14px 18px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.2);">
+            {{ session('success') }}
+        </div>
+    @endif
     <div class="min-h-screen bg-cover flex items-center justify-center"
          style="background-image: url('/images/Background.png');">
         <div class="w-full sm:max-w-md mt-6 px-6 py-4 overflow-hidden sm:rounded-lg">

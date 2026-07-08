@@ -28,12 +28,15 @@ class RegisteredUserController extends Controller
      *
      * @throws ValidationException
      */
-   public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
 {
     $request->validate([
         'username' => ['required', 'string', 'max:255', 'unique:users,username'],
-        'email' => ['nullable', 'email', 'max:255','unique:users,email'],
+        'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
         'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        'terms' => ['accepted'],
+    ], [
+        'terms.accepted' => 'Anda harus menyetujui Syarat & Ketentuan terlebih dahulu.',
     ]);
 
     $user = User::create([
@@ -43,9 +46,8 @@ class RegisteredUserController extends Controller
     ]);
 
     event(new Registered($user));
-
-    //Auth::login($user);
-
-    return redirect()->route('login')->with('success', 'Akun berhasil dibuat, silakan login.');
-}
+    
+    return redirect()->route('login')
+    ->with('status', 'Akun berhasil dibuat, silakan login.');
+    }
 }
