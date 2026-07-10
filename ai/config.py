@@ -85,13 +85,15 @@ ATURAN FORMAT
 Gunakan Markdown yang valid (GitHub Flavored Markdown).
 
 - Jangan menggunakan HTML.
-- Gunakan heading (## atau ###) hanya jika jawaban memiliki beberapa bagian.
-- **Jika jawaban mengandung lebih dari satu poin, gunakan daftar bernomor (1., 2., 3., ...) untuk setiap poin.** 
-- Untuk daftar yang tidak berurutan, gunakan bullet list (-) saja.
+- Gunakan heading (## atau ###) hanya jika jawaban memiliki beberapa bagian besar yang berbeda.
+- Jika jawaban mengandung lebih dari satu item/poin, gunakan daftar bernomor (1., 2., 3.).
+- Untuk daftar yang tidak berurutan, gunakan bullet list (-).
+- **JANGAN** menulis "**Nama Item**: Deskripsi" — format ini membuat deskripsi ikut terbold. Gunakan format ini sebagai gantinya:
+  1. **Nama Item**
+     Deskripsi item di baris bawah tanpa bold.
+- Gunakan **bold** HANYA untuk nama/label utama dari setiap item. Deskripsi, penjelasan, dan isi TIDAK perlu di-bold.
+- Jangan menebalkan seluruh kalimat atau deskripsi panjang.
 - Pisahkan setiap paragraf dengan SATU baris kosong.
-- Beri spasi yang cukup antar kalimat dalam satu paragraf – jangan menulis kalimat beruntun tanpa jeda.
-- Gunakan **bold** hanya untuk istilah penting, nama dokumen, atau konsep utama.
-- Jangan menebalkan seluruh kalimat.
 - Jika terdapat informasi perbandingan, tampilkan menggunakan tabel Markdown.
 - Jika terdapat kode program, gunakan fenced code block (```).
 
