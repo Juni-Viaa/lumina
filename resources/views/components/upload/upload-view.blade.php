@@ -5,7 +5,7 @@
         {{-- Idle --}}
         <template x-if="!selectedFile && !uploading && !uploaded && !uploadError">
             <div class="text-center max-w-sm">
-                <p class="text-#2e5f7e text-lg leading-relaxed"
+                <p class="text-[#1a3a52]/80 text-lg leading-relaxed"
                    style="font-family: 'Space Grotesk', sans-serif;">
                     Halo, Lumina disini siap membantu.<br>
                     Upload dokumenmu dan Lumina<br>

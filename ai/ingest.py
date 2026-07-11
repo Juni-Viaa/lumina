@@ -238,7 +238,7 @@ def main() -> None:
     parser.add_argument("--user-id",     type=int, default=1)
     args = parser.parse_args()
 
-    supported = {".pdf", ".docx", ".doc", ".txt"}
+    supported = {".pdf", ".docx"}
     files: list[Path] = []
     for raw in args.paths:
         p = Path(raw).expanduser().resolve()
