@@ -1,17 +1,7 @@
 """
-rag_server.py — Persistent Flask API server for the RAG pipeline.
-
-Loads the embedding model ONCE on startup, then serves both
-query and ingest requests instantly without reloading.
-
-Endpoints:
-    GET  /health          — check server + model status
-    POST /ask             — run a RAG query
-    POST /ingest          — ingest a document into FAISS + MySQL
-    POST /reload          — reload FAISS index after external ingest
-
+flask_api.py — Persistent Flask API server for the RAG pipeline.
 Start once, keep running:
-    python rag_server.py
+    python flask_api.py
 """
 
 from __future__ import annotations
@@ -67,16 +57,12 @@ _rag_chain   = None
 _retriever   = None
 
 # ── Rebuild debounce state ────────────────────────────────────────────────────
-# Goal: deleting N documents in quick succession triggers exactly ONE rebuild,
-# scheduled 60s after the LAST delete. If a rebuild is already running when a
-# new delete arrives, exactly one more rebuild is queued to run right after
-# the current one finishes (not stacked, not skipped).
 REBUILD_DEBOUNCE_SECONDS = 60
 
-_rebuild_lock      = threading.Lock()   # guards all state below
-_rebuild_timer     = None               # pending threading.Timer, or None
-_rebuild_running   = False              # True while a rebuild is actively executing
-_rebuild_requested_again = False        # set if a delete arrives mid-rebuild
+_rebuild_lock      = threading.Lock()
+_rebuild_timer     = None
+_rebuild_running   = False
+_rebuild_requested_again = False
 
 
 # ── DB helpers ─────────────────────────────────────────────────────────────────
@@ -145,16 +131,13 @@ def _persist_chunks(document_id: int, file_path: Path, chunks: list[Document]) -
     conn = _get_db()
     try:
         with conn.cursor() as cur:
-            # Delete stale chunks (re-ingest scenario)
             cur.execute("DELETE FROM chunks WHERE document_id = %s", (document_id,))
 
-            # Bulk insert chunks
             cur.executemany(
                 "INSERT INTO chunks (document_id, chunk_text) VALUES (%s, %s)",
                 [(document_id, chunk.page_content) for chunk in chunks],
             )
 
-            # Mark document as indexed
             cur.execute(
                 "UPDATE documents SET status = 'indexed', path_file = %s WHERE document_id = %s",
                 (str(file_path), document_id),
@@ -162,7 +145,6 @@ def _persist_chunks(document_id: int, file_path: Path, chunks: list[Document]) -
         conn.commit()
     except Exception:
         conn.rollback()
-        # Mark as failed
         try:
             with conn.cursor() as cur:
                 cur.execute(
@@ -241,9 +223,7 @@ def _upsert_faiss(chunks: list[Document], document_id: int) -> int:
 def _format_context(docs: list[Document]) -> str:
     parts = []
     for i, doc in enumerate(docs, 1):
-        # Use actual document name from metadata, not "Excerpt N"
         source = doc.metadata.get("source_file", "Dokumen tidak diketahui")
-        # Strip file extension for cleaner display
         doc_name = source.rsplit(".", 1)[0].replace("_", " ")
         page = doc.metadata.get("page", "")
         page_str = f", hal. {int(page) + 1}" if page != "" else ""
@@ -400,23 +380,18 @@ def ingest():
     try:
         start = time.time()
 
-        # Copy to documents dir
         dest = config.DOCUMENTS_DIR / path.name
         if dest.resolve() != path.resolve():
             shutil.copy2(path, dest)
 
-        # Pipeline
         docs   = _load_file(dest)
         docs   = _clean_docs(docs)
         chunks = _chunk_docs(docs)
 
-        # Save to MySQL
         _persist_chunks(document_id, dest, chunks)
 
-        # Save to FAISS
         chunks_added = _upsert_faiss(chunks, document_id)
 
-        # Rebuild RAG chain now that index has data
         _build_rag_chain()
 
         elapsed = round((time.time() - start) * 1000)
@@ -462,14 +437,10 @@ def _execute_rebuild() -> None:
         except Exception as exc:
             print(f"[rebuild] FAILED: {exc}", flush=True)
 
-        # Check if another delete arrived while we were rebuilding.
-        # If so, run exactly one more rebuild immediately (covers everything
-        # deleted during this run), then check again in case more arrived
-        # during THAT run too.
         with _rebuild_lock:
             if _rebuild_requested_again:
                 _rebuild_requested_again = False
-                continue  # loop and rebuild again
+                continue
             else:
                 _rebuild_running = False
                 break
@@ -478,26 +449,14 @@ def _execute_rebuild() -> None:
 def schedule_rebuild() -> str:
     """
     Called on every document delete. Implements the debounce + queue logic:
-
-    - If no rebuild is pending and none is running: schedule one 60s from now.
-    - If a rebuild is already pending (timer running): reset the 60s timer.
-    - If a rebuild is currently EXECUTING: mark that one more run is needed
-      immediately after the current one finishes (no new 60s wait — the
-      current rebuild already covers most of the wait time).
-
-    Returns a status string for logging/response purposes.
     """
     global _rebuild_timer, _rebuild_requested_again
 
     with _rebuild_lock:
         if _rebuild_running:
-            # A rebuild is actively executing right now.
-            # Don't start a second thread — just flag that we need
-            # one more pass once this one completes.
             _rebuild_requested_again = True
             return "queued_after_current_rebuild"
 
-        # No rebuild running. Reset/start the debounce timer.
         if _rebuild_timer is not None:
             _rebuild_timer.cancel()
 
@@ -513,7 +472,9 @@ def schedule_rebuild() -> str:
 
 @app.route("/reload", methods=["POST"])
 def reload_index():
-    """Reload FAISS index from disk without restarting the server."""
+    """
+    Reload FAISS index from disk without restarting the server.
+    """
     global _vectorstore
     try:
         if not Path(config.FAISS_INDEX_PATH).exists():
@@ -536,17 +497,11 @@ def reload_index():
 def rebuild_index():
     """
     Schedule a debounced FAISS rebuild after a document deletion.
-
-    Body (optional): { "immediate": true }  — skip debounce, rebuild now
-    (kept for manual/admin use; normal delete flow should NOT use this).
-
-    Returns immediately — does not wait for the rebuild to complete.
     """
     data      = request.get_json(silent=True) or {}
     immediate = bool(data.get("immediate", False))
 
     if immediate:
-        # Synchronous path — only for manual/admin triggered rebuilds
         try:
             result = rebuild_faiss_index(_embeddings)
             global _vectorstore
@@ -566,7 +521,7 @@ def rebuild_index():
     return jsonify({
         "success": True,
         "mode":    "debounced",
-        "status":  status,  # "scheduled" | "queued_after_current_rebuild"
+        "status":  status,
         "debounce_seconds": REBUILD_DEBOUNCE_SECONDS,
     })
 
@@ -583,11 +538,11 @@ def rebuild_status():
 
 
 # ── Entry point ────────────────────────────────────────────────────────────────
+if not config.GEMINI_API_KEY:
+    print("ERROR: GEMINI_API_KEY not set in .env", flush=True)
+    raise RuntimeError("GEMINI_API_KEY is required")
+
+_load_components()
 
 if __name__ == "__main__":
-    if not config.GEMINI_API_KEY:
-        print("ERROR: GEMINI_API_KEY not set in .env", flush=True)
-        sys.exit(1)
-
-    _load_components()
     app.run(host="127.0.0.1", port=5001, debug=False, threaded=True)

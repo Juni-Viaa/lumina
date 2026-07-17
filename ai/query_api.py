@@ -1,11 +1,5 @@
 """
 query_api.py — Laravel-callable wrapper around the RAG pipeline.
-
-Accepts a question via CLI, runs the full RAG chain, prints ONE JSON line
-to stdout. Laravel calls this via proc_open() and reads that JSON.
-
-Usage:
-    python query_api.py --question "Apa itu PBL?" --query-id 5
 """
 
 from __future__ import annotations

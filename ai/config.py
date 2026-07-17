@@ -1,9 +1,5 @@
 """
-config.py — Central configuration for the RAG system.
-
-Handles two folder structures:
-  • ai/config.py   → .env is at ../../.env  (Laravel root)
-  • rag/config.py  → .env is at ../.env or ./. env
+config.py — Configuration for the RAG system.
 """
 
 import os

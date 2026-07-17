@@ -5,11 +5,7 @@
 @php($pageTitle = 'Selamat datang, ' . auth()->user()->username)
 
 @section('content')
-<div
-    class="glass-panel upload-form flex flex-col h-full overflow-hidden"
-    x-data="uploadForm()"
-    x-init="fetchDocuments()"
->
+<div class="glass-panel upload-form flex flex-col h-full overflow-hidden" x-data="uploadForm()" x-init="fetchDocuments()">
     @include('components.upload.upload-header')
 
     @include('components.upload.upload-view')

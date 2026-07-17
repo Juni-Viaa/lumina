@@ -36,7 +36,7 @@
                      ? 'bg-white border border-slate-200 shadow-sm rounded-tr-sm px-4 py-3'
                      : 'bg-white border border-slate-200 shadow-sm rounded-tl-sm px-5 py-4'">
 
-                {{-- Assistant: rendered markdown — color is set by .prose-chat, NOT inherited from bubble --}}
+                {{-- Assistant: rendered markdown --}}
                 <template x-if="msg.role === 'assistant'">
                     <div class="prose-chat" x-html="renderMarkdown(msg.content)"></div>
                 </template>

@@ -4,7 +4,7 @@
 .prose-chat {
     font-size: 15px;
     line-height: 1.75;
-    color: #1e293b;           /* dark slate — fixed, never inherits blue */
+    color: #1e293b;
     max-width: none;
 }
 
@@ -16,7 +16,7 @@
 .prose-chat p:first-child { margin-top: 0; }
 .prose-chat p:last-child  { margin-bottom: 0; }
 
-/* ── Headings — bold + slightly larger, dark color ─────────────────────── */
+/* ── Headings ─────────────────────────────────────────────────────────────── */
 .prose-chat h1,
 .prose-chat h2,
 .prose-chat h3,
@@ -35,14 +35,13 @@
 .prose-chat h2:first-child,
 .prose-chat h3:first-child { margin-top: 0; }
 
-/* ── Bold — ONLY for main labels/terms, NOT descriptions ───────────────── */
-/* Bold text is dark navy, same weight — no color change */
+/* ── Bold ───────────────────────────────────────────────────────────────── */
 .prose-chat strong {
     font-weight: 650;
-    color: #0f172a;        /* dark but NOT teal/blue */
+    color: #0f172a;
 }
 
-/* ── Italic — foreign words, subtle, no color change ────────────────────── */
+/* ── Italic ──────────────────────────────────────────────────────────────── */
 .prose-chat em {
     font-style: italic;
     font-weight: normal;
@@ -152,8 +151,8 @@
 
 /* ── Prevent Tailwind prose plugin from overriding colors ────────────────── */
 .prose-chat a          { color: #2563eb; }
-.prose-chat *          { color: inherit; }      /* cascade from .prose-chat base */
-.prose-chat strong     { color: #0f172a; }      /* re-assert after wildcard */
+.prose-chat *          { color: inherit; }
+.prose-chat strong     { color: #0f172a; }
 .prose-chat em         { color: inherit; }
 .prose-chat code       { color: #1e293b; }
 </style>

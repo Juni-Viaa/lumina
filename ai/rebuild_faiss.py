@@ -1,11 +1,5 @@
 """
 rebuild_faiss.py — Rebuild the FAISS index from chunks still in MySQL.
-
-Called by the Flask /rebuild-index endpoint after a document is deleted.
-Reads all non-deleted chunks from the DB and rebuilds FAISS from scratch.
-
-Usage (standalone):
-    python rebuild_faiss.py
 """
 
 from __future__ import annotations
@@ -92,8 +86,6 @@ def rebuild(embeddings: HuggingFaceEmbeddings) -> dict:
     chunks = get_all_active_chunks()
 
     if not chunks:
-        # No documents left — remove the index entirely so the server
-        # knows there's nothing to query.
         import shutil
         if Path(index_path).exists():
             shutil.rmtree(index_path)
