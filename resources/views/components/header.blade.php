@@ -26,7 +26,7 @@
         </button>
 
         {{-- Dropdown --}}
-        <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 top-full mt-4 w-48 rounded-2xl shadow-lg bg-white border border-white/10 py-2 z-[9999]">
+        <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 top-full mt-4 w-48 rounded-2xl shadow-lg bg-white border border-white/10 py-2 z-9999">
             {{-- Change Password --}}
             <a href="{{ route('profile.password') }}"
                class="flex items-center gap-2 px-4 py-2.5 text-sm text-[#1a3a52] hover:bg-[#1a6fa8]/10 transition-colors"
