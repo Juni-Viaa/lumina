@@ -13,10 +13,7 @@
     <div class="relative" x-data="{ open: false }">
 
         {{-- Profile Button --}}
-        <button
-            @click="open = !open"
-            class="glass-inner w-9 h-9 rounded-full flex items-center justify-center hover:scale-105 transition-transform"
-        >
+        <button @click="open = !open" class="glass-inner w-9 h-9 rounded-full flex items-center justify-center hover:scale-105 transition-transform">
             <svg class="w-5 h-5 text-[#1a6fa8]/70"
                  fill="none"
                  stroke="currentColor"
@@ -29,12 +26,7 @@
         </button>
 
         {{-- Dropdown --}}
-        <div
-            x-show="open"
-            @click.away="open = false"
-            x-transition
-           class="absolute right-0 top-full mt-4 w-48 glass-panel rounded-2xl shadow-lg border border-white/10 py-2 z-[9999]"
-        >
+        <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 top-full mt-4 w-48 rounded-2xl shadow-lg bg-white border border-white/10 py-2 z-[9999]">
             {{-- Change Password --}}
             <a href="{{ route('profile.password') }}"
                class="flex items-center gap-2 px-4 py-2.5 text-sm text-[#1a3a52] hover:bg-[#1a6fa8]/10 transition-colors"

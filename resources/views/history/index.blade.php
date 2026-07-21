@@ -2,7 +2,7 @@
 @section('title', 'Riwayat Pertanyaan')
 
 @section('content')
-<div class="glass-panel flex flex-col h-full overflow-hidden" x-data="{ search: '' }">
+<div class="glass-panel flex flex-col h-full overflow-hidden md:overflow-hidden" x-data="{ search: '' }">
 
     <div class="px-5 pt-5 pb-4 shrink-0">
         <p class="text-xs uppercase tracking-[0.24em] text-[#1a3a52]/45 mb-1"
@@ -16,7 +16,7 @@
         ])
     </div>
 
-    <div class="flex-1 overflow-y-auto px-5 pb-5">
+    <div class="flex-1 overflow-y-auto px-5 pb-24 md:pb-5">
         <div class="flex flex-col gap-1">
 
             @forelse($chatHistory as $chat)
@@ -28,6 +28,7 @@
                     <div class="min-w-0 flex-1">
                         <p class="text-[#1a3a52]/80 text-sm truncate"
                            style="font-family: 'Space Grotesk', sans-serif;">
+                            {{-- FIX: use display_title accessor --}}
                             {{ $chat->display_title }}
                         </p>
                         <p class="text-[#1a3a52]/40 text-xs mt-0.5">

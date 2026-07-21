@@ -71,8 +71,11 @@
             }
             #app-sidebar.open { transform: translateX(0); }
 
-            /* Remove padding bottom reserved for bottom nav */
-            #main-content   { padding-bottom: 72px; }
+            /* Extra bottom padding so content clears the bottom nav + shadow */
+            #main-content { padding-bottom: 80px; }
+
+            /* Also pad the main yield area so shadow isn't clipped */
+            #main-content > main { overflow: visible; }
         }
 
         /* ── Bottom navigation bar — mobile only ────────────────────────── */
@@ -142,16 +145,6 @@
     {{-- Bottom nav — mobile only --}}
     <nav id="bottom-nav" class="md:hidden">
 
-        {{-- Menu / sidebar toggle --}}
-        <button @click="sidebarOpen = !sidebarOpen"
-                class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
-                       text-[#1a3a52]/70 hover:text-[#1a3a52]">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-            </svg>
-            <span class="text-[10px] font-medium">Menu</span>
-        </button>
-
         {{-- New Chat --}}
         <a href="{{ route('dashboard.index') }}"
            class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
@@ -180,16 +173,13 @@
             <span class="text-[10px] font-medium">Riwayat</span>
         </a>
 
-        {{-- Logout --}}
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit"
-                    class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
-                           text-[#1a3a52]/70 hover:text-[#1a3a52]">
-                <img src="{{ asset('images/icons/LogOutIcon.png') }}" class="w-5 h-5 opacity-70" alt="">
-                <span class="text-[10px] font-medium">Keluar</span>
-            </button>
-        </form>
+        {{-- Profile --}}
+        <a href="{{ route('profile.edit') }}"
+           class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
+                  {{ request()->routeIs('profile.*') ? 'text-[#1a6fa8]' : 'text-[#1a3a52]/70 hover:text-[#1a3a52]' }}">
+            <img src="{{ asset('images/icons/LogOutIcon.png') }}" class="w-5 h-5 opacity-70" alt="">
+            <span class="text-[10px] font-medium">Profil</span>
+        </a>
 
     </nav>
 

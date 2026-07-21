@@ -34,7 +34,7 @@
         </button>
     </div>
 
-    <p class="text-[10px] md:text-xs text-black/50 mt-1.5 md:mt-2 text-center">
+    <p class="hidden lg:block text-[10px] md:text-xs text-black/50 mt-1.5 md:mt-2 text-center">
         Enter untuk kirim · Shift+Enter baris baru
     </p>
 </div>

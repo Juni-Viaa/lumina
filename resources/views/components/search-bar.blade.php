@@ -1,6 +1,5 @@
 {{--
     Component: search-bar
-    Usage: @include('components.search-bar', ['placeholder' => 'Cari Pertanyaan...', 'model' => 'search'])
 --}}
 <div class="glass-inner rounded-2xl flex items-center gap-3 px-4 py-3">
     <svg class="w-4 h-4 text-[#1a3a52]/60 shrink-0" fill="#000000" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" transform="rotate(90)"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> 
