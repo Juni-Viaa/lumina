@@ -21,7 +21,7 @@ worker_class = "gthread"
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 loglevel       = "info"
-accesslog      = "/ai/logs/gunicorn_access.log"
-errorlog       = "/ai/logs/gunicorn_error.log"
+accesslog      = "ai/logs/gunicorn_access.log"
+errorlog       = "ai/logs/gunicorn_error.log"
 capture_output = True       # redirects flask print() statements to errorlog
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s %(D)sμs'
