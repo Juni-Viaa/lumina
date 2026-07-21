@@ -5,8 +5,6 @@
 <div class="glass-panel flex flex-col h-full overflow-hidden md:overflow-hidden" x-data="{ search: '' }">
 
     <div class="px-5 pt-5 pb-4 shrink-0">
-        <p class="text-xs uppercase tracking-[0.24em] text-[#1a3a52]/45 mb-1"
-           style="font-family: 'Space Grotesk', sans-serif;">Lumina</p>
         <h3 class="text-[#1a3a52] text-lg font-semibold leading-tight mb-4"
             style="font-family: 'Space Grotesk', sans-serif;">Riwayat Pertanyaan</h3>
 
