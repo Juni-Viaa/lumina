@@ -1,7 +1,9 @@
 # gunicorn.conf.py — Lumina RAG Server configuration
 
+import os
+
 # ── Bind ──────────────────────────────────────────────────────────────────────
-bind = "127.0.0.1:5001"
+bind = f"0.0.0.0:{os.environ.get('PORT', '10000')}"
 
 # ── Workers ───────────────────────────────────────────────────────────────────
 workers = 1
