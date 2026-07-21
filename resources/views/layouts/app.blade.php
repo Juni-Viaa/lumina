@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="id" class="h-full">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,151 +15,183 @@
         body {
             background-color: #C9E8F7;
             background-image: url("{{ asset('images/Background.png') }}");
-            background-size: 100% 100%;
-            background-repeat: no-repeat;
+            background-size: cover;
             background-position: center;
             background-attachment: fixed;
         }
 
-        /* Glass panel — soft white frost over the light bg */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.55);
-            box-shadow:
-                0 4px 24px rgba(100, 160, 200, 0.15),
-                0 1px 4px rgba(0, 0, 0, 0.08);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
             border-radius: 20px;
         }
 
-        /* Inner glass elements — white tint with top-light inner glow */
         .glass-inner {
-            background: rgba(255, 255, 255, 0.28);
-            border: 1px solid rgba(255, 255, 255, 0.50);
-            box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.70),
-                inset 0 -1px 0 rgba(180, 210, 230, 0.20),
-                0 2px 8px rgba(0, 0, 0, 0.06);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
 
-        /* Sidebar nav items */
-        .sidebar-nav-item:hover {
-            background: rgba(255, 255, 255, 0.35);
-        }
-        .sidebar-nav-active {
-            background: rgba(255, 255, 255, 0.45);
-        }
+        .sidebar-nav-item:hover  { background: rgba(255, 255, 255, 0.12); }
+        .sidebar-nav-active      { background: rgba(255, 255, 255, 0.16); }
+        .sidebar                 { border-radius: 20px; }
+        .header                  { border-radius: 20px; }
+        .upload-bar              { border-radius: 16px; }
 
-        /* ── Font colour tokens ──────────────────────────────────────────────
-           Background is light blue-gray (~#D8E8F0) so dark navy/slate reads
-           best. Avoid pure black — it feels harsh on frosted glass.
-        ─────────────────────────────────────────────────────────────────── */
-
-        /* Primary text — dark navy, high contrast */
-        :root {
-            --text-primary:   #1a3a52;   /* headings, labels               */
-            --text-secondary: #2e5f7e;   /* body, descriptions             */
-            --text-muted:     #5a8aa8;   /* placeholders, timestamps       */
-            --text-disabled:  #8aafc8;   /* disabled states                */
-            --text-on-blue:   #ffffff;   /* text on coloured bubbles/btns  */
-        }
-
-        /* Sidebar: no top border radius on right side to blend into layout */
-        .sidebar {
-            border-radius: 20px;
-        }
-
-        /* Header: full-width pill shape */
-        .header {
-            border-radius: 20px;
-        }
-
-        /* Upload bar */
-        .upload-bar {
-            border-radius: 16px;
-        }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar       { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(26,111,168,0.2); border-radius: 4px; }
+
+        /* ── Mobile drawer overlay ─────────────────────────────────────── */
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            z-index: 40;
+        }
+        #sidebar-overlay.active { display: block; }
+
+        /* ── Mobile sidebar drawer ─────────────────────────────────────── */
+        @media (max-width: 767px) {
+            #app-sidebar {
+                position: fixed;
+                top: 0; left: 0; bottom: 0;
+                z-index: 50;
+                width: 72vw;
+                max-width: 280px;
+                transform: translateX(-100%);
+                transition: transform 0.25s ease;
+                border-radius: 0 20px 20px 0;
+            }
+            #app-sidebar.open { transform: translateX(0); }
+
+            /* Remove padding bottom reserved for bottom nav */
+            #main-content   { padding-bottom: 72px; }
+        }
+
+        /* ── Bottom navigation bar — mobile only ────────────────────────── */
+        #bottom-nav {
+            display: none;
+        }
+        @media (max-width: 767px) {
+            #bottom-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0; left: 0; right: 0;
+                height: 64px;
+                z-index: 40;
+                background: rgba(255,255,255,0.55);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border-top: 1px solid rgba(255,255,255,0.4);
+                align-items: center;
+                justify-content: space-around;
+                padding: 0 8px;
+            }
+        }
+
+        /* ── Tablet: narrower sidebar, no bottom nav ─────────────────────── */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            #app-sidebar { width: 56px; }
+            #app-sidebar .nav-label,
+            #app-sidebar .sidebar-brand-name,
+            #app-sidebar .history-section,
+            #app-sidebar .logout-label { display: none; }
+            #app-sidebar .sidebar-logo-wrap { justify-content: center; }
+        }
     </style>
     @stack('head')
 </head>
-@if (session('success'))
-    <div
-        x-data="{ show: true }"
-        x-show="show"
-        x-transition:enter="transform ease-out duration-300 transition"
-        x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-        x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100 translate-x-0"
-        x-transition:leave-end="opacity-0 translate-x-2"
-        x-init="setTimeout(() => show = false, 3500)"
-        class="fixed top-5 right-5 z-[9999]"
-        style="display: none;"
-    >
-        <div class="w-[360px] overflow-hidden rounded-2xl border border-emerald-300/40 bg-emerald-400/20 backdrop-blur-xl shadow-2xl">
-            <div class="flex items-start gap-3 p-4">
-                <div class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                </div>
+<body class="h-full" x-data="{ sidebarOpen: false }" @keydown.escape.window="sidebarOpen = false">
 
-                <div class="flex-1 pr-2">
-                    <h4 class="text-sm font-semibold tracking-wide text-emerald-950">
-                        Berhasil
-                    </h4>
-                    <p class="mt-1 text-sm leading-5 text-emerald-900">
-                        {{ session('success') }}
-                    </p>
-                </div>
+    {{-- Mobile overlay --}}
+    <div id="sidebar-overlay"
+         :class="sidebarOpen ? 'active' : ''"
+         @click="sidebarOpen = false"
+         class="md:hidden"></div>
 
-                <button
-                    @click="show = false"
-                    class="rounded-lg p-1 text-emerald-900/70 transition hover:bg-emerald-500/10 hover:text-emerald-950"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            <div class="h-[3px] w-full bg-emerald-900/10">
-                <div
-                    class="h-[3px] bg-emerald-600"
-                    x-init="$el.style.width = '100%'; setTimeout(() => $el.style.width = '0%', 50)"
-                    style="transition: width 3.5s linear;"
-                ></div>
-            </div>
-        </div>
-    </div>
-@endif
-<body class="h-full">
-
-    <div class="flex h-full p-4 gap-3">
+    <div class="flex h-full p-2 md:p-4 gap-2 md:gap-3">
 
         {{-- Sidebar --}}
-        @include('components.sidebar', ['chatHistory' => $chatHistory ?? []])
+        <div id="app-sidebar"
+             :class="sidebarOpen ? 'open' : ''"
+             class="glass-panel sidebar shrink-0 md:w-56 lg:w-60 h-full">
+            @include('components.sidebar')
+        </div>
 
         {{-- Right column --}}
-        <div class="flex flex-col flex-1 min-w-0 gap-3">
+        <div id="main-content" class="flex flex-col flex-1 min-w-0 gap-2 md:gap-3">
 
             {{-- Header --}}
             @include('components.header')
 
             {{-- Main content --}}
-            <main class="flex-1 min-h-0">
+            <main class="flex-1 min-h-0 overflow-hidden">
                 @yield('content')
             </main>
 
         </div>
     </div>
+
+    {{-- Bottom nav — mobile only --}}
+    <nav id="bottom-nav" class="md:hidden">
+
+        {{-- Menu / sidebar toggle --}}
+        <button @click="sidebarOpen = !sidebarOpen"
+                class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
+                       text-[#1a3a52]/70 hover:text-[#1a3a52]">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+            <span class="text-[10px] font-medium">Menu</span>
+        </button>
+
+        {{-- New Chat --}}
+        <a href="{{ route('dashboard.index') }}"
+           class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
+                  {{ request()->routeIs('dashboard.index') ? 'text-[#1a6fa8]' : 'text-[#1a3a52]/70 hover:text-[#1a3a52]' }}">
+            <img src="{{ asset('images/icons/NewChatIcon.png') }}" class="w-5 h-5 opacity-70" alt="">
+            <span class="text-[10px] font-medium">Chat</span>
+        </a>
+
+        {{-- Upload — admin only --}}
+        @auth
+            @if(auth()->user()->role === 'admin')
+            <a href="{{ route('uploads.index') }}"
+               class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
+                      {{ request()->routeIs('uploads.*') ? 'text-[#1a6fa8]' : 'text-[#1a3a52]/70 hover:text-[#1a3a52]' }}">
+                <img src="{{ asset('images/icons/UploadIcon.png') }}" class="w-5 h-5 opacity-70" alt="">
+                <span class="text-[10px] font-medium">Upload</span>
+            </a>
+            @endif
+        @endauth
+
+        {{-- History --}}
+        <a href="{{ route('history.index') }}"
+           class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
+                  {{ request()->routeIs('history.*') ? 'text-[#1a6fa8]' : 'text-[#1a3a52]/70 hover:text-[#1a3a52]' }}">
+            <img src="{{ asset('images/icons/HistoryIcon.png') }}" class="w-5 h-5 opacity-70" alt="">
+            <span class="text-[10px] font-medium">Riwayat</span>
+        </a>
+
+        {{-- Logout --}}
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit"
+                    class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
+                           text-[#1a3a52]/70 hover:text-[#1a3a52]">
+                <img src="{{ asset('images/icons/LogOutIcon.png') }}" class="w-5 h-5 opacity-70" alt="">
+                <span class="text-[10px] font-medium">Keluar</span>
+            </button>
+        </form>
+
+    </nav>
 
     @stack('scripts')
 </body>

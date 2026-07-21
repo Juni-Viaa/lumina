@@ -10,9 +10,9 @@ from dotenv import load_dotenv
 _this_dir = Path(__file__).parent
 
 for _candidate in [
-    _this_dir.parent / ".env",        # ai/../.env  OR  rag/../.env
-    _this_dir.parent.parent / ".env", # rag/../../.env
-    _this_dir / ".env",               # same folder
+    _this_dir.parent / ".env",
+    _this_dir.parent.parent / ".env",
+    _this_dir / ".env",
 ]:
     if _candidate.exists():
         load_dotenv(dotenv_path=str(_candidate), override=True)

@@ -16,9 +16,7 @@
 
                 <!-- Logo -->
                 <div class="w-24 h-24 bg-white/20 mx-auto mb-6 rounded-lg backdrop-blur-sm">
-                    <img src="{{ asset('images/icons/Logo.png') }}"
-                        alt="Logo"
-                        class="w-full h-full object-cover rounded-lg">
+                    <img src="{{ asset('images/icons/Logo.png') }}" alt="Logo" class="w-full h-full object-cover rounded-lg">
                 </div>
 
                 <form method="POST"
