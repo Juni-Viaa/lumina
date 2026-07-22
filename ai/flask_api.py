@@ -6,6 +6,7 @@ Start once, keep running:
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import sys
@@ -538,11 +539,35 @@ def rebuild_status():
 
 
 # ── Entry point ────────────────────────────────────────────────────────────────
+# RENDER FIX: Render scans for an open port within ~60s of startup.
+# The embedding model takes 60-120s to load, so if we block on
+# _load_components() before the server binds, Render never sees the port
+# and kills the process with "No open ports detected".
+#
+# Solution: start the server FIRST (port binds immediately), then load
+# the model in a background thread. During model loading, /health returns
+# {"model_loaded": false} and /ask returns 503 — both are handled
+# gracefully by the Laravel DashboardController.
+
 if not config.GEMINI_API_KEY:
     print("ERROR: GEMINI_API_KEY not set in .env", flush=True)
     raise RuntimeError("GEMINI_API_KEY is required")
 
-_load_components()
+def _load_in_background():
+    """Load model in a thread so Gunicorn can bind the port first."""
+    print("[startup] Loading model in background thread...", flush=True)
+    _load_components()
+    print("[startup] Model ready.", flush=True)
+
+# When running under Gunicorn with preload_app=True, the module is
+# imported in the master process before workers fork. We start the
+# background thread here so the model loads once and is shared.
+import threading as _threading
+_bg = _threading.Thread(target=_load_in_background, daemon=True)
+_bg.start()
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5001, debug=False, threaded=True)
+    # Direct python run — wait for model before accepting requests
+    _bg.join()
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5001)),
+            debug=False, threaded=True)

@@ -37,7 +37,7 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME     = os.getenv("DB_DATABASE", "lumina")
 
 # ── Embedding ──────────────────────────────────────────────────────────────────
-EMBEDDING_MODEL  = "intfloat/multilingual-e5-small"
+EMBEDDING_MODEL  = "LazarusNLP/all-indo-e5-small-v4"
 EMBEDDING_DEVICE = "cpu"
 
 # ── Chunking ───────────────────────────────────────────────────────────────────
