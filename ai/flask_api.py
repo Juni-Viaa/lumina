@@ -269,10 +269,19 @@ def _build_rag_chain():
         | StrOutputParser()
     )
 
+import os
+import psutil
+
+def log_ram(stage):
+    rss = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+    print(f"[RAM] {stage}: {rss:.1f} MB", flush=True)
+
 
 def _load_components():
     """Load embedding model + FAISS index (if exists) once on startup."""
     global _embeddings, _vectorstore
+
+    log_ram("before embedding")
 
     print("Loading embedding model...", flush=True)
     _embeddings = HuggingFaceEmbeddings(
@@ -280,6 +289,8 @@ def _load_components():
         model_kwargs={"device": config.EMBEDDING_DEVICE},
         encode_kwargs={"normalize_embeddings": True},
     )
+
+    log_ram("after embedding")
 
     if Path(config.FAISS_INDEX_PATH).exists():
         print("Loading FAISS index...", flush=True)
