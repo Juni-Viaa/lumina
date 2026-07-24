@@ -99,14 +99,65 @@
             }
         }
 
-        /* ── Tablet: narrower sidebar, no bottom nav ─────────────────────── */
+        /* ── Tablet: icon-only sidebar ───────────────────────────────────── */
         @media (min-width: 768px) and (max-width: 1023px) {
-            #app-sidebar { width: 56px; }
+            #app-sidebar { width: 68px; min-width: 68px; }
+
+            /* Hide all text labels and history dropdown */
             #app-sidebar .nav-label,
             #app-sidebar .sidebar-brand-name,
             #app-sidebar .history-section,
-            #app-sidebar .logout-label { display: none; }
-            #app-sidebar .sidebar-logo-wrap { justify-content: center; }
+            #app-sidebar .logout-label { display: none !important; }
+
+            /* Logo area — center the L icon, clip the oversized image */
+            #app-sidebar .sidebar-logo-wrap { padding: 0; }
+            #app-sidebar .sidebar-logo-wrap > div {
+                width: 44px;
+                height: 36px;
+                margin: 0 auto;
+                padding: 0;
+                justify-content: center;
+                overflow: hidden;
+            }
+            /* The logo img is w-12 h-8 (48x32) — constrain it */
+            #app-sidebar .sidebar-logo-wrap img {
+                width: 36px !important;
+                height: 28px !important;
+                opacity: 0.8;
+            }
+
+            /* Nav items — center icon, remove horizontal padding */
+            #app-sidebar .sidebar-nav-item {
+                justify-content: center;
+                padding-left: 8px;
+                padding-right: 8px;
+                gap: 0;
+            }
+
+            /* Nav icons — explicit size so they're never clipped */
+            #app-sidebar nav img {
+                width: 22px !important;
+                height: 22px !important;
+                min-width: 22px;
+                opacity: 0.75;
+            }
+
+            /* Logout button row */
+            #app-sidebar form > div {
+                justify-content: center;
+                padding: 0 4px;
+            }
+            #app-sidebar form .sidebar-nav-item {
+                justify-content: center;
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+            #app-sidebar form img {
+                width: 22px !important;
+                height: 22px !important;
+                min-width: 22px;
+                opacity: 0.75;
+            }
         }
     </style>
     @stack('head')
@@ -143,7 +194,7 @@
     </div>
 
     {{-- Bottom nav — mobile only --}}
-    <nav id="bottom-nav" class="md:hidden glass-panel">
+    <nav id="bottom-nav" class="md:hidden">
 
         {{-- New Chat --}}
         <a href="{{ route('dashboard.index') }}"
@@ -173,16 +224,13 @@
             <span class="text-[10px] font-medium">Riwayat</span>
         </a>
 
-        {{-- Logout --}}
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit"
-                    class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
-                           text-[#1a3a52]/70 hover:text-[#1a3a52]">
-                <img src="{{ asset('images/icons/LogOutIcon.png') }}" class="w-5 h-5 opacity-70" alt="">
-                <span class="text-[10px] font-medium">Keluar</span>
-            </button>
-        </form>
+        {{-- Profile --}}
+        <a href="{{ route('profile.edit') }}"
+           class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
+                  {{ request()->routeIs('profile.*') ? 'text-[#1a6fa8]' : 'text-[#1a3a52]/70 hover:text-[#1a3a52]' }}">
+            <img src="{{ asset('images/icons/LogOutIcon.png') }}" class="w-5 h-5 opacity-70" alt="">
+            <span class="text-[10px] font-medium">Profil</span>
+        </a>
 
     </nav>
 
