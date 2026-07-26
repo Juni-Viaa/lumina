@@ -65,14 +65,32 @@ def _get_db_connection() -> pymysql.connections.Connection:
 
 # ── Step functions ─────────────────────────────────────────────────────────────
 
+def _log_ingest(document_id: int, step: str, message: str) -> None:
+    conn = _get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO ingest_logs (document_id, step, message, created_at, updated_at) "
+                "VALUES (%s, %s, %s, NOW(), NOW())",
+                (document_id, step, message)
+            )
+        conn.commit()
+    except Exception as e:
+        print(f"[ERROR] Failed to insert log: {e}")
+    finally:
+        conn.close()
+
 def _copy_to_documents(payload: dict) -> dict:
     file_path: Path = payload["file_path"]
     dest = config.DOCUMENTS_DIR / file_path.name
+    document_id = payload.get("document_id")
     if dest.resolve() != file_path.resolve():
         shutil.copy2(file_path, dest)
         console.print(f"    [dim]Copied to documents/{file_path.name}[/dim]")
+        _log_ingest(document_id, "copy", f"Copied to {dest.name}")
     else:
         console.print("    [dim]Already in documents/[/dim]")
+        _log_ingest(document_id, "copy", f"Already in documents/{file_path.name}")
     return {**payload, "file_path": dest}
 
 
@@ -88,10 +106,12 @@ def _load_document(payload: dict) -> dict:
         raise ValueError(f"Unsupported extension '{suffix}'.")
 
     docs = loader.load()
+    document_id = payload.get("document_id")
     for doc in docs:
         doc.metadata.setdefault("source_file", file_path.name)
 
     console.print(f"    [dim]Loaded {len(docs)} page(s)/section(s)[/dim]")
+    _log_ingest(document_id, "load", f"Loaded {len(docs)} pages")
     return {**payload, "docs": docs}
 
 
@@ -106,7 +126,9 @@ def _preprocess_documents(payload: dict) -> dict:
         for d in payload["docs"]
         if len(clean(d.page_content)) > 50
     ]
+    document_id = payload.get("document_id")
     console.print(f"    [dim]{len(cleaned)} non-empty page(s) after cleaning[/dim]")
+    _log_ingest(document_id, "preprocess", f"Cleaned to {len(cleaned)} pages")
     return {**payload, "docs": cleaned}
 
 
@@ -119,7 +141,9 @@ def _chunk_documents(payload: dict) -> dict:
         add_start_index=True,
     )
     chunks = splitter.split_documents(payload["docs"])
+    document_id = payload.get("document_id")
     console.print(f"    [dim]{len(chunks)} chunks (size={config.CHUNK_SIZE}, overlap={config.CHUNK_OVERLAP})[/dim]")
+    _log_ingest(document_id, "chunk", f"Created {len(chunks)} chunks")
     return {**payload, "chunks": chunks}
 
 
@@ -161,6 +185,8 @@ def _persist_to_mysql(payload: dict) -> dict:
 
         conn.commit()
         console.print(f"    [dim]{len(chunk_rows)} chunk(s) saved, status=indexed[/dim]")
+        _log_ingest(document_id, "mysql", f"Saved {len(chunk_rows)} chunks to MySQL")
+        _log_ingest(document_id, "complete", "All chunks stored")
 
     except Exception:
         conn.rollback()
@@ -184,11 +210,11 @@ def _make_upsert_faiss_fn(embeddings: HuggingFaceEmbeddings):
     def _upsert_to_faiss(payload: dict) -> dict:
         chunks: list[Document] = payload["chunks"]
         index_path = config.FAISS_INDEX_PATH
-        doc_id = payload.get("document_id")
+        document_id = payload.get("document_id")
 
-        if doc_id is not None:
+        if document_id is not None:
             for chunk in chunks:
-                chunk.metadata["document_id"] = doc_id
+                chunk.metadata["document_id"] = document_id
 
         if Path(index_path).exists():
             console.print("    [dim]Merging into existing FAISS index...[/dim]")
@@ -202,7 +228,8 @@ def _make_upsert_faiss_fn(embeddings: HuggingFaceEmbeddings):
 
         vectorstore.save_local(index_path)
         console.print(f"    [dim]FAISS index saved to {index_path}[/dim]")
-        return {"chunks_added": len(chunks), "index_path": index_path, "document_id": doc_id}
+        _log_ingest(document_id, "faiss", f"FAISS index updated with {len(chunks)} chunks")
+        return {"chunks_added": len(chunks), "index_path": index_path, "document_id": document_id}
 
     return _upsert_to_faiss
 
@@ -285,7 +312,6 @@ def main() -> None:
 
     console.rule()
     console.print(f"[bold]Summary:[/bold] [green]{success} succeeded[/green]  [dim]{failed} failed[/dim]")
-
 
 if __name__ == "__main__":
     main()

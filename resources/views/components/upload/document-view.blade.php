@@ -55,6 +55,9 @@
                                 </p>
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
+                                <button @click="viewChunks(doc)" class="px-3 py-2 rounded-xl text-xs text-[#1a6fa8] hover:bg-white/10 transition-all">
+                                    Chunks
+                                </button>
                                 <button @click="confirmDelete(doc)" class="px-3 py-2 rounded-xl text-xs text-rose-500 hover:bg-rose-500/10 transition-all">
                                     Delete
                                 </button>
