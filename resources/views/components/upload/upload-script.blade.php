@@ -26,26 +26,6 @@ window.uploadForm = function () {
             {
                 label: 'Mengunggah file',
                 desc: 'Mentransfer dokumen ke server'
-            },
-            {
-                label: 'Membaca dokumen',
-                desc: 'Mengekstrak teks dari file'
-            },
-            {
-                label: 'Membersihkan konten',
-                desc: 'Memfilter teks yang tidak relevan'
-            },
-            {
-                label: 'Memotong ke chunks',
-                desc: 'Membagi teks menjadi potongan kecil'
-            },
-            {
-                label: 'Menyimpan ke database',
-                desc: 'Memasukkan data ke MySQL'
-            },
-            {
-                label: 'Membuat vector index',
-                desc: 'Menghasilkan embedding FAISS'
             }
         ],
 
@@ -94,32 +74,7 @@ window.uploadForm = function () {
                 });
         },
 
-        _startStepTicker() {
-            this.currentStep = 0;
-
-            const delays = [700,1100,900,1300,1100];
-
-            let elapsed = 0;
-
-            delays.forEach((delay, i) => {
-
-                elapsed += delay;
-
-                setTimeout(() => {
-
-                    if (
-                        this.uploading &&
-                        this.currentStep === i
-                    ) {
-                        this.currentStep = i + 1;
-                    }
-
-                }, elapsed);
-
-            });
-        },
-
-                startIngesting(docId) {
+        startIngesting(docId) {
             this.activeView = 'ingesting';
             this.ingestingDocId = docId;
             this.ingestLogs = [];
@@ -194,8 +149,6 @@ window.uploadForm = function () {
             this.uploading = true;
             this.uploadError = null;
             this.currentStep = 0;
-
-            this._startStepTicker();
 
             const form = new FormData();
 

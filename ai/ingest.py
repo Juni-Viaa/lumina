@@ -76,7 +76,7 @@ def _log_ingest(document_id: int, step: str, message: str) -> None:
             )
         conn.commit()
     except Exception as e:
-        print(f"[ERROR] Failed to insert log: {e}")
+        print(f"[ERROR] Failed to insert ingest log: {e}", flush=True)
     finally:
         conn.close()
 

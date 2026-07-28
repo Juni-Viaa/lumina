@@ -79,6 +79,20 @@ def _get_db():
         autocommit=False,
     )
 
+def _log_ingest(document_id: int, step: str, message: str) -> None:
+    conn = _get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO ingest_logs (document_id, step, message, created_at, updated_at) "
+                "VALUES (%s, %s, %s, NOW(), NOW())",
+                (document_id, step, message)
+            )
+        conn.commit()
+    except Exception as e:
+        print(f"[ERROR] Failed to insert ingest log: {e}", flush=True)
+    finally:
+        conn.close()
 
 def _save_answer(query_id: int, answer_text: str) -> int:
     conn = _get_db()
@@ -357,10 +371,6 @@ def ask():
 
 @app.route("/ingest", methods=["POST"])
 def ingest():
-    """
-    Ingest a document: load → clean → chunk → MySQL → FAISS.
-    Body: { "file_path": "...", "document_id": N, "user_id": N }
-    """
     data        = request.get_json(force=True)
     file_path   = data.get("file_path", "").strip()
     document_id = data.get("document_id")
@@ -383,18 +393,29 @@ def ingest():
         dest = config.DOCUMENTS_DIR / path.name
         if dest.resolve() != path.resolve():
             shutil.copy2(path, dest)
+            _log_ingest(document_id, "copy", f"Copied to documents/{dest.name}")
+        else:
+            _log_ingest(document_id, "copy", f"Already in documents/{dest.name}")
 
-        docs   = _load_file(dest)
-        docs   = _clean_docs(docs)
+        docs = _load_file(dest)
+        _log_ingest(document_id, "load", f"Loaded {len(docs)} page(s)/section(s)")
+
+        docs = _clean_docs(docs)
+        _log_ingest(document_id, "preprocess", f"Cleaned to {len(docs)} page(s)")
+
         chunks = _chunk_docs(docs)
+        _log_ingest(document_id, "chunk", f"Created {len(chunks)} chunks")
 
         _persist_chunks(document_id, dest, chunks)
+        _log_ingest(document_id, "mysql", f"Saved {len(chunks)} chunks to MySQL")
 
         chunks_added = _upsert_faiss(chunks, document_id)
+        _log_ingest(document_id, "faiss", f"FAISS index updated with {chunks_added} chunks")
 
         _build_rag_chain()
 
         elapsed = round((time.time() - start) * 1000)
+        _log_ingest(document_id, "complete", "All chunks stored")
 
         return jsonify({
             "success":      True,
@@ -404,7 +425,16 @@ def ingest():
         })
 
     except Exception as exc:
-        return jsonify({"success": False, "error": str(exc)}), 500
+           _log_ingest(document_id, "error", str(exc))
+           try:
+               conn = _get_db()
+               with conn.cursor() as cur:
+                   cur.execute("UPDATE documents SET status='failed' WHERE document_id=%s", (document_id,))
+               conn.commit()
+               conn.close()
+           except Exception:
+               pass
+           return jsonify({"success": False, "error": str(exc)}), 500
 
 
 def _execute_rebuild() -> None:

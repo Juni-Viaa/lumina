@@ -11,18 +11,25 @@
         </div>
     </div>
 
-    <div class="flex-1 min-h-0 overflow-hidden rounded-3xl glass-inner">
-        <div class="h-full overflow-y-auto p-4" x-ref="logContainer">
+    <div class="flex-1 min-h-0 overflow-hidden rounded-3xl glass-inner flex flex-col">
+        {{-- Table header --}}
+        <div class="grid grid-cols-[84px_120px_1fr] gap-3 px-4 py-2 border-b border-white/10 shrink-0">
+            <span class="text-[10px] font-medium uppercase tracking-wide text-[#1a3a52]/40 text-center">Waktu</span>
+            <span class="text-[10px] font-medium uppercase tracking-wide text-[#1a3a52]/40 text-center">Tahap</span>
+            <span class="text-[10px] font-medium uppercase tracking-wide text-[#1a3a52]/40 text-center">Detail</span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-4" x-ref="logContainer">
             <template x-if="ingestLogs.length === 0">
-                <div class="text-center text-[#1a3a52]/50 text-sm">Menunggu log pertama...</div>
+                <div class="text-center text-[#1a3a52]/50 text-sm py-10">Menunggu log pertama...</div>
             </template>
             <template x-for="log in ingestLogs" :key="log.id">
-                <div class="flex items-start gap-3 py-2 border-b border-white/10 last:border-0">
-                    <div class="w-24 shrink-0 text-[10px] text-[#1a3a52]/40" x-text="new Date(log.created_at).toLocaleTimeString()"></div>
-                    <div class="flex-1 min-w-0">
-                        <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide bg-white/15 text-[#1a3a52]/70" x-text="log.step"></span>
-                        <span class="ml-2 text-sm text-[#1a3a52]/80" x-text="log.message"></span>
-                    </div>
+                <div class="grid grid-cols-[84px_120px_1fr] gap-3 items-center py-2 border-b border-white/10 last:border-0">
+                    <span class="text-[10px] text-[#1a3a52]/40 tabular-nums" x-text="new Date(log.created_at).toLocaleTimeString()"></span>
+                    <span>
+                        <span class="inline-flex justify-center items-center w-full px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide bg-white/15 text-[#1a3a52]/70" x-text="log.step"></span>
+                    </span>
+                    <span class="text-sm text-[#1a3a52]/80 truncate" x-text="log.message" :title="log.message"></span>
                 </div>
             </template>
         </div>
