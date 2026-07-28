@@ -52,6 +52,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/upload/{upload}', [UploadController::class, 'destroy'])->name('uploads.destroy');
 });
 
+// ── Route untuk health check ─────────────────────────────────────────
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok']);
+});
+
 // ── Route Terms ───────────────────────────────
 Route::get('/terms', function () {
     return view('components.terms');
