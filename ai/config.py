@@ -26,6 +26,9 @@ VECTORSTORE_DIR = BASE_DIR / "vectorstore"
 DOCUMENTS_DIR.mkdir(exist_ok=True)
 VECTORSTORE_DIR.mkdir(exist_ok=True)
 
+FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", "./faiss_index")
+DOCUMENTS_DIR = os.getenv("DOCUMENTS_DIR", "./documents")
+
 # ── API Keys ───────────────────────────────────────────────────────────────────
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 

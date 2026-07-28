@@ -1,7 +1,9 @@
 # gunicorn.conf.py — Lumina RAG Server configuration
+import os
 
 # ── Bind ──────────────────────────────────────────────────────────────────────
-bind = "127.0.0.1:5001"
+port = os.getenv("PORT", "5001")
+bind = f"0.0.0.0:{port}"
 
 # ── Workers ───────────────────────────────────────────────────────────────────
 workers = 1
@@ -21,7 +23,7 @@ worker_class = "gthread"
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 loglevel       = "info"
-accesslog      = "/var/www/lumina/ai/logs/gunicorn_access.log"
-errorlog       = "/var/www/lumina/ai/logs/gunicorn_error.log"
+accesslog      = "-"
+errorlog       = "-"
 capture_output = True       # redirects flask print() statements to errorlog
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s %(D)sμs'
