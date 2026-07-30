@@ -29,3 +29,4 @@ Thumbs.db
 /ai/vectorstore/
 /ai/__pycache__/
 /ai/.venv/
+!/ai/logs/*.log
