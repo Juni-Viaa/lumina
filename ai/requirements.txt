@@ -45,6 +45,7 @@ python-dotenv
 # ============================
 flask
 gunicorn
+supervisor
 
 # ============================
 # Utilities
