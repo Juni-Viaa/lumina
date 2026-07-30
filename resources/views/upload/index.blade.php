@@ -11,6 +11,8 @@
     @include('components.upload.upload-view')
 
     @include('components.upload.document-view')
+    @include('components.upload.ingesting-view')
+    @include('components.upload.chunk-modal')
 
     @include('components.upload.delete-modal')
 </div>

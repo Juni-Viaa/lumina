@@ -24,5 +24,14 @@
                 : 'text-[#1a3a52]/55 hover:text-[#1a3a52]'">
             Documents
         </button>
+
+        <button
+            @click="activeView='ingesting'"
+            class="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+            :class="activeView === 'ingesting'
+                ? 'bg-white/35 text-[#1a3a52]'
+                : 'text-[#1a3a52]/55 hover:text-[#1a3a52]'">
+            Ingesting
+        </button>
     </div>
 </div>

@@ -46,6 +46,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/upload/list', [UploadController::class, 'list'])->name('uploads.list');
 
     Route::post('/upload', [UploadController::class, 'store'])->name('uploads.store');
+    Route::get('/ingest-logs/{documentId}', [UploadController::class, 'streamIngestLogs']);
+    Route::get('/chunks/{documentId}', [UploadController::class, 'getChunks']);
 
     Route::delete('/upload/{upload}', [UploadController::class, 'destroy'])->name('uploads.destroy');
 });

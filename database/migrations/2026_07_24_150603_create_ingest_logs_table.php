@@ -1,0 +1,27 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::create('ingest_logs', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('document_id');
+            $table->string('step');
+            $table->text('message');
+            $table->timestamps();
+
+            $table->foreign('document_id')->references('document_id')->on('documents')->onDelete('cascade');
+            $table->index(['document_id', 'created_at']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('ingest_logs');
+    }
+};

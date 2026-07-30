@@ -132,6 +132,57 @@ class UploadController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────────
 
+    public function streamIngestLogs($documentId)
+    {
+        $response = response()->stream(function () use ($documentId) {
+            $lastId = 0;
+            while (true) {
+                // Cek jika dokumen sudah selesai (status indexed/failed) atau belum ada log baru
+                $logs = DB::table('ingest_logs')
+                    ->where('document_id', $documentId)
+                    ->where('id', '>', $lastId)
+                    ->orderBy('id')
+                    ->get();
+
+                foreach ($logs as $log) {
+                    echo "event: log\n";
+                    echo "data: " . json_encode(['id' => $log->id, 'step' => $log->step, 'message' => $log->message, 'created_at' => $log->created_at]) . "\n\n";
+                    $lastId = $log->id;
+                    ob_flush();
+                    flush();
+                }
+
+                // Cek status dokumen
+                $doc = DB::table('documents')->where('document_id', $documentId)->first(['status']);
+                if ($doc && in_array($doc->status, ['indexed', 'failed'])) {
+                    echo "event: done\n";
+                    echo "data: " . json_encode(['status' => $doc->status]) . "\n\n";
+                    ob_flush();
+                    flush();
+                    break;
+                }
+
+                sleep(1); // polling interval
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no', // untuk nginx
+        ]);
+
+        return $response;
+    }
+
+    public function getChunks($documentId)
+    {
+        $chunks = DB::table('chunks')
+            ->where('document_id', $documentId)
+            ->orderBy('chunk_id') // pastikan ada kolom chunk_id
+            ->get(['chunk_id', 'chunk_text']);
+
+        return response()->json($chunks);
+    }
+
     public function destroy(Upload $upload): JsonResponse
     {
         if ((int) $upload->user_id !== (int) Auth::id()) {
