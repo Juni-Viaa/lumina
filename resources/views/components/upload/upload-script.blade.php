@@ -6,6 +6,7 @@ window.uploadForm = function () {
 
         // Untuk ingesting
         ingestingDocId: null,
+        ingestSessionId: null,
         ingestLogs: [],
         ingestStatus: null, // 'processing', 'indexed', 'failed'
 
@@ -74,9 +75,38 @@ window.uploadForm = function () {
                 });
         },
 
-        startIngesting(docId) {
+        // ── Pewarnaan step ingest ──────────────────────────────────────────
+        stepBadgeClass(step) {
+            if (step === 'error' || step === 'failed') {
+                return 'bg-rose-500/15 text-rose-600';
+            }
+            if (step === 'complete') {
+                return 'bg-green-500/15 text-green-600';
+            }
+            return 'bg-orange-500/15 text-orange-600';
+        },
+
+        stepTextClass(step) {
+            if (step === 'error' || step === 'failed') return 'text-rose-600';
+            if (step === 'complete') return 'text-green-600';
+            return 'text-[#1a3a52]/80';
+        },
+
+        stepLabel(step) {
+            if (step === 'complete') return 'Ready';
+            return step;
+        },
+
+        statusColorClass() {
+            if (this.ingestStatus === 'failed') return 'text-rose-500';
+            if (this.ingestStatus === 'indexed') return 'text-green-600';
+            return 'text-[#1a3a52]/50';
+        },
+
+        startIngesting(docId, sessionId) {
             this.activeView = 'ingesting';
             this.ingestingDocId = docId;
+            this.ingestSessionId = sessionId;
             this.ingestLogs = [];
             this.ingestStatus = 'processing';
 
@@ -84,7 +114,7 @@ window.uploadForm = function () {
                 this.eventSource.close();
             }
 
-            const url = `/ingest-logs/${docId}`;
+            const url = `/ingest-logs/${docId}?session=${sessionId ?? ''}`;
             this.eventSource = new EventSource(url);
 
             this.eventSource.addEventListener('log', (e) => {
@@ -113,6 +143,13 @@ window.uploadForm = function () {
                 this.ingestStatus = 'failed';
                 this.eventSource.close();
             };
+        },
+
+        // Dipanggil dari tombol "Ingest" di daftar dokumen — melihat log
+        // sesi ingest terakhir untuk dokumen tersebut.
+        viewIngest(doc) {
+            if (!doc.ingest_session_id) return;
+            this.startIngesting(doc.document_id, doc.ingest_session_id);
         },
 
         stopIngesting() {
@@ -187,7 +224,7 @@ window.uploadForm = function () {
 
                 this.uploaded = true;
                 this.uploading = false;
-                this.startIngesting(data.document_id);
+                this.startIngesting(data.document_id, data.session_id);
 
                 await this.fetchDocuments();
 

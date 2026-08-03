@@ -65,14 +65,14 @@ def _get_db_connection() -> pymysql.connections.Connection:
 
 # ── Step functions ─────────────────────────────────────────────────────────────
 
-def _log_ingest(document_id: int, step: str, message: str) -> None:
+def _log_ingest(document_id: int, step: str, message: str, session_id: str | None = None) -> None:
     conn = _get_db_connection()
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO ingest_logs (document_id, step, message, created_at, updated_at) "
-                "VALUES (%s, %s, %s, NOW(), NOW())",
-                (document_id, step, message)
+                "INSERT INTO ingest_logs (document_id, session_id, step, message, created_at, updated_at) "
+                "VALUES (%s, %s, %s, %s, NOW(), NOW())",
+                (document_id, session_id, step, message)
             )
         conn.commit()
     except Exception as e:
@@ -80,23 +80,46 @@ def _log_ingest(document_id: int, step: str, message: str) -> None:
     finally:
         conn.close()
 
+
+def _mark_failed(document_id: int | None, session_id: str | None, error_message: str) -> None:
+    """Uniform failure path: logs an 'error' step and flips status to failed,
+    regardless of which pipeline stage threw."""
+    if document_id is None:
+        return
+    _log_ingest(document_id, "error", error_message, session_id)
+    try:
+        conn = _get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE documents SET status = 'failed' WHERE document_id = %s",
+                (document_id,),
+            )
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
 def _copy_to_documents(payload: dict) -> dict:
     file_path: Path = payload["file_path"]
     dest = config.DOCUMENTS_DIR / file_path.name
     document_id = payload.get("document_id")
+    session_id = payload.get("session_id")
     if dest.resolve() != file_path.resolve():
         shutil.copy2(file_path, dest)
         console.print(f"    [dim]Copied to documents/{file_path.name}[/dim]")
-        _log_ingest(document_id, "copy", f"Copied to {dest.name}")
+        _log_ingest(document_id, "copy", f"Copied to {dest.name}", session_id)
     else:
         console.print("    [dim]Already in documents/[/dim]")
-        _log_ingest(document_id, "copy", f"Already in documents/{file_path.name}")
+        _log_ingest(document_id, "copy", f"Already in documents/{file_path.name}", session_id)
     return {**payload, "file_path": dest}
 
 
 def _load_document(payload: dict) -> dict:
     file_path: Path = payload["file_path"]
     suffix = file_path.suffix.lower()
+    session_id = payload.get("session_id")
 
     if suffix == ".pdf":
         loader = PyPDFLoader(str(file_path))
@@ -111,7 +134,7 @@ def _load_document(payload: dict) -> dict:
         doc.metadata.setdefault("source_file", file_path.name)
 
     console.print(f"    [dim]Loaded {len(docs)} page(s)/section(s)[/dim]")
-    _log_ingest(document_id, "load", f"Loaded {len(docs)} pages")
+    _log_ingest(document_id, "load", f"Loaded {len(docs)} pages", session_id)
     return {**payload, "docs": docs}
 
 
@@ -127,8 +150,9 @@ def _preprocess_documents(payload: dict) -> dict:
         if len(clean(d.page_content)) > 50
     ]
     document_id = payload.get("document_id")
+    session_id = payload.get("session_id")
     console.print(f"    [dim]{len(cleaned)} non-empty page(s) after cleaning[/dim]")
-    _log_ingest(document_id, "preprocess", f"Cleaned to {len(cleaned)} pages")
+    _log_ingest(document_id, "preprocess", f"Cleaned to {len(cleaned)} pages", session_id)
     return {**payload, "docs": cleaned}
 
 
@@ -142,8 +166,9 @@ def _chunk_documents(payload: dict) -> dict:
     )
     chunks = splitter.split_documents(payload["docs"])
     document_id = payload.get("document_id")
+    session_id = payload.get("session_id")
     console.print(f"    [dim]{len(chunks)} chunks (size={config.CHUNK_SIZE}, overlap={config.CHUNK_OVERLAP})[/dim]")
-    _log_ingest(document_id, "chunk", f"Created {len(chunks)} chunks")
+    _log_ingest(document_id, "chunk", f"Created {len(chunks)} chunks", session_id)
     return {**payload, "chunks": chunks}
 
 
@@ -152,6 +177,7 @@ def _persist_to_mysql(payload: dict) -> dict:
     chunks: list[Document]  = payload["chunks"]
     document_id: int | None = payload.get("document_id")
     user_id: int            = payload.get("user_id", 1)
+    session_id: str | None  = payload.get("session_id")
 
     conn = _get_db_connection()
     try:
@@ -178,27 +204,17 @@ def _persist_to_mysql(payload: dict) -> dict:
                 "INSERT INTO chunks (document_id, chunk_text) VALUES (%s, %s)",
                 chunk_rows,
             )
-            cur.execute(
-                "UPDATE documents SET status = 'indexed' WHERE document_id = %s",
-                (document_id,),
-            )
 
         conn.commit()
-        console.print(f"    [dim]{len(chunk_rows)} chunk(s) saved, status=indexed[/dim]")
-        _log_ingest(document_id, "mysql", f"Saved {len(chunk_rows)} chunks to MySQL")
-        _log_ingest(document_id, "complete", "All chunks stored")
+        console.print(f"    [dim]{len(chunk_rows)} chunk(s) saved to MySQL[/dim]")
+        _log_ingest(document_id, "mysql", f"Saved {len(chunk_rows)} chunks to MySQL", session_id)
+        # NOTE: 'complete'/status='indexed' is now set in _upsert_to_faiss,
+        # AFTER the vector index is actually written — not here. Marking it
+        # done at the MySQL step was misleading: the FAISS step still had
+        # real work left, so "Ready" needs to reflect FAISS being done too.
 
     except Exception:
         conn.rollback()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE documents SET status = 'failed' WHERE document_id = %s",
-                    (document_id,),
-                )
-            conn.commit()
-        except Exception:
-            pass
         raise
     finally:
         conn.close()
@@ -211,6 +227,7 @@ def _make_upsert_faiss_fn(embeddings: HuggingFaceEmbeddings):
         chunks: list[Document] = payload["chunks"]
         index_path = config.FAISS_INDEX_PATH
         document_id = payload.get("document_id")
+        session_id = payload.get("session_id")
 
         if document_id is not None:
             for chunk in chunks:
@@ -228,7 +245,21 @@ def _make_upsert_faiss_fn(embeddings: HuggingFaceEmbeddings):
 
         vectorstore.save_local(index_path)
         console.print(f"    [dim]FAISS index saved to {index_path}[/dim]")
-        _log_ingest(document_id, "faiss", f"FAISS index updated with {len(chunks)} chunks")
+        _log_ingest(document_id, "faiss", f"FAISS index updated with {len(chunks)} chunks", session_id)
+
+        conn = _get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE documents SET status = 'indexed' WHERE document_id = %s",
+                    (document_id,),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+        _log_ingest(document_id, "complete", "All chunks stored", session_id)
+
         return {"chunks_added": len(chunks), "index_path": index_path, "document_id": document_id}
 
     return _upsert_to_faiss
@@ -263,6 +294,7 @@ def main() -> None:
     parser.add_argument("paths", nargs="+")
     parser.add_argument("--document-id", type=int, default=None)
     parser.add_argument("--user-id",     type=int, default=1)
+    parser.add_argument("--session-id",  type=str, default=None)
     args = parser.parse_args()
 
     supported = {".pdf", ".docx"}
@@ -300,6 +332,7 @@ def main() -> None:
                 "file_path":   file_path,
                 "document_id": args.document_id,
                 "user_id":     args.user_id,
+                "session_id":  args.session_id,
             })
             console.print(
                 f"\n  [bold green]Done![/bold green] "
@@ -308,6 +341,7 @@ def main() -> None:
             success += 1
         except Exception as exc:
             console.print(f"\n  [bold red]Failed:[/bold red] {exc}\n")
+            _mark_failed(args.document_id, args.session_id, str(exc))
             failed += 1
 
     console.rule()

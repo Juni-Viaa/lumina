@@ -61,13 +61,16 @@
                      class="w-9 h-6 opacity-70" alt="Lumina">
             </div>
             <div class="bg-white border border-slate-200 shadow-sm
-                        px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full animate-bounce bg-[#1a3a52]/60"
-                      style="animation-delay:0ms"></span>
-                <span class="w-1.5 h-1.5 rounded-full animate-bounce bg-[#1a3a52]/60"
-                      style="animation-delay:150ms"></span>
-                <span class="w-1.5 h-1.5 rounded-full animate-bounce bg-[#1a3a52]/60"
-                      style="animation-delay:300ms"></span>
+                        px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-2.5">
+                <span class="flex items-center gap-1.5 shrink-0">
+                    <span class="w-1.5 h-1.5 rounded-full animate-bounce bg-[#1a3a52]/60"
+                          style="animation-delay:0ms"></span>
+                    <span class="w-1.5 h-1.5 rounded-full animate-bounce bg-[#1a3a52]/60"
+                          style="animation-delay:150ms"></span>
+                    <span class="w-1.5 h-1.5 rounded-full animate-bounce bg-[#1a3a52]/60"
+                          style="animation-delay:300ms"></span>
+                </span>
+                <span class="text-xs text-[#1a3a52]/50" x-text="processingMsg"></span>
             </div>
         </div>
     </template>

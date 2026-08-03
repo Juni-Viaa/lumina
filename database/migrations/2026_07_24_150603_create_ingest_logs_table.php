@@ -11,12 +11,14 @@ return new class extends Migration
         Schema::create('ingest_logs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('document_id');
+            $table->uuid('session_id')->nullable();
             $table->string('step');
             $table->text('message');
             $table->timestamps();
-
             $table->foreign('document_id')->references('document_id')->on('documents')->onDelete('cascade');
+
             $table->index(['document_id', 'created_at']);
+            $table->index(['document_id', 'session_id']);
         });
     }
 

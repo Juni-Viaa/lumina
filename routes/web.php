@@ -20,6 +20,7 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard / Chat
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard.index');
     Route::post('/ask', [DashboardController::class, 'ask'])->name('dashboard.ask');
+    Route::get('/queries/{queryId}/status', [DashboardController::class, 'queryStatus']);
     Route::get('/history/{queryLog}', [DashboardController::class, 'show'])->name('dashboard.show');
     Route::get('/dashboard/history', [DashboardController::class, 'historyJson'])->name('dashboard.history-json');
 

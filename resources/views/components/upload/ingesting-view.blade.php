@@ -4,7 +4,7 @@
             <p class="text-sm font-medium text-[#1a3a52]" style="font-family: 'Space Grotesk', sans-serif;">
                 Proses Ingesting
             </p>
-            <p class="text-xs text-[#1a3a52]/50">Status: <span x-text="ingestStatus"></span></p>
+            <p class="text-xs" :class="statusColorClass()">Status: <span x-text="ingestStatus"></span></p>
         </div>
         <div class="glass-inner px-3 py-2 rounded-2xl text-xs text-[#1a3a52]/60">
             <span x-text="ingestLogs.length"></span> log
@@ -27,9 +27,13 @@
                 <div class="grid grid-cols-[84px_120px_1fr] gap-3 items-center py-2 border-b border-white/10 last:border-0">
                     <span class="text-[10px] text-[#1a3a52]/40 tabular-nums" x-text="new Date(log.created_at).toLocaleTimeString()"></span>
                     <span>
-                        <span class="inline-flex justify-center items-center w-full px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide bg-white/15 text-[#1a3a52]/70" x-text="log.step"></span>
+                        <span
+                            class="inline-flex justify-center items-center w-full px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide"
+                            :class="stepBadgeClass(log.step)"
+                            x-text="stepLabel(log.step)">
+                        </span>
                     </span>
-                    <span class="text-sm text-[#1a3a52]/80 truncate" x-text="log.message" :title="log.message"></span>
+                    <span class="text-sm truncate" :class="stepTextClass(log.step)" x-text="log.message" :title="log.message"></span>
                 </div>
             </template>
         </div>

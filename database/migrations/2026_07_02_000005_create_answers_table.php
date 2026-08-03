@@ -11,6 +11,7 @@ return new class extends Migration {
             $table->id('answer_id');
             $table->foreignId('query_id')->constrained('queries', 'query_id')->cascadeOnDelete()->cascadeOnUpdate();
             $table->text('answer_text');
+            $table->json('sources')->nullable();
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
             $table->timestamp('deleted_at')->nullable();

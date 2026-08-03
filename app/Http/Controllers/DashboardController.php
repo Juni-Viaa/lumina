@@ -7,6 +7,7 @@ use App\Models\Answer;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -40,6 +41,11 @@ class DashboardController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Kicks off a question. Fire-and-forget ke Flask — tidak menunggu jawaban
+     * selesai di sini. Frontend mengambil progres real-time lewat SSE di
+     * streamQueryLogs() dan menerima jawaban akhir lewat event 'done'.
+     */
     public function ask(Request $request): JsonResponse
     {
         $request->validate([
@@ -80,62 +86,55 @@ class DashboardController extends Controller
             ], 500);
         }
 
-        // 3. Call Flask RAG server ─────────────────────────────────────────────
-        try {
-            $response = Http::timeout(120)
-                ->post(self::RAG_SERVER . '/ask', [
-                    'question' => $question,
-                    'query_id' => $queryLog->query_id,
-                ]);
+        // 3. Dispatch ke Flask, TIDAK menunggu jawabannya di sini ──────────────
+        $this->dispatchAsk($queryLog->query_id, $question);
 
-            $result = $response->json();
+        return response()->json([
+            'query_id' => $queryLog->query_id,
+            'status'   => 'processing',
+        ], 202);
+    }
 
-            if (! $response->successful() || ! ($result['success'] ?? false)) {
-                Log::error('DashboardController@ask: RAG server returned error', [
-                    'query_id'    => $queryLog->query_id,
-                    'http_status' => $response->status(),
-                    'rag_error'   => $result['error'] ?? null,
-                    'rag_body'    => $result,
-                ]);
+    // ─────────────────────────────────────────────────────────────────────────
 
-                return response()->json([
-                    'answer'   => null,
-                    'error'    => 'Lumina tidak dapat memproses pertanyaan Anda saat ini. Silakan coba lagi.',
-                    'query_id' => $queryLog->query_id,
-                ], 500);
-            }
+    /**
+     * SSE stream untuk progres satu pertanyaan — menampilkan tahap nyata
+     * yang sedang dijalankan Python (retrieve/generate/save), lalu event
+     * 'done' berisi jawaban akhir begitu selesai.
+     */
+    /**
+     * Endpoint status sederhana untuk di-poll frontend (fetch biasa, bukan
+     * SSE) — jauh lebih tahan banting lintas hosting/proxy. Begitu status
+     * jadi answered/failed, jawabannya ikut disertakan di respons ini.
+     */
+    public function queryStatus(Request $request, $queryId): JsonResponse
+    {
+        $query = DB::table('queries')
+            ->where('query_id', $queryId)
+            ->where('user_id', Auth::id())
+            ->first(['status', 'current_step', 'response_time_ms']);
 
-            return response()->json([
-                'answer'           => $result['answer'],
-                'sources'          => $result['sources']          ?? [],
-                'response_time_ms' => $result['response_time_ms'] ?? null,
-                'query_id'         => $queryLog->query_id,
-                'answer_id'        => $result['answer_id']        ?? null,
-            ]);
-
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('DashboardController@ask: Cannot connect to RAG server', [
-                'query_id'  => $queryLog->query_id,
-                'exception' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'answer' => null,
-                'error'  => 'Server AI tidak dapat dihubungi. Pastikan rag_server.py sedang berjalan.',
-            ], 503);
-
-        } catch (\Throwable $e) {
-            Log::error('DashboardController@ask: Unexpected error', [
-                'query_id'  => $queryLog->query_id,
-                'exception' => $e->getMessage(),
-                'trace'     => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'answer' => null,
-                'error'  => 'Terjadi kesalahan yang tidak terduga. Silakan coba lagi.',
-            ], 500);
+        if (! $query) {
+            return response()->json(['status' => 'not_found'], 404);
         }
+
+        $payload = [
+            'status' => $query->status,
+            'step'   => $query->current_step,
+        ];
+
+        if ($query->status === 'answered') {
+            $answer = DB::table('answers')
+                ->where('query_id', $queryId)
+                ->orderByDesc('answer_id')
+                ->first();
+
+            $payload['answer']           = $answer->answer_text ?? '';
+            $payload['answer_id']        = $answer->answer_id ?? null;
+            $payload['response_time_ms'] = $query->response_time_ms;
+        }
+
+        return response()->json($payload);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -218,8 +217,63 @@ class DashboardController extends Controller
 
             return [
                 'online' => false,
-                'error'  => 'Server AI tidak aktif. Jalankan: python ai/rag_server.py',
+                'error'  => 'Server AI tidak aktif. Jalankan: python ai/flask_api.py',
             ];
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Fire-and-forget dispatch ke Flask /ask — sama polanya dengan
+     * UploadController::dispatchIngest(). Laravel tidak menunggu balasan
+     * di sini; progres diambil lewat streamQueryLogs().
+     */
+    private function dispatchAsk(int $queryId, string $question): void
+    {
+        $payload = json_encode([
+            'question' => $question,
+            'query_id' => $queryId,
+        ]);
+
+        try {
+            $host   = '127.0.0.1';
+            $port   = 5001;
+            $length = strlen($payload);
+
+            $http = "POST /ask HTTP/1.1\r\n"
+                  . "Host: {$host}:{$port}\r\n"
+                  . "Content-Type: application/json\r\n"
+                  . "Content-Length: {$length}\r\n"
+                  . "Connection: close\r\n"
+                  . "\r\n"
+                  . $payload;
+
+            $socket = fsockopen($host, $port, $errno, $errstr, 3);
+            if ($socket) {
+                fwrite($socket, $http);
+                fclose($socket);
+
+                Log::info('DashboardController@dispatchAsk: Ask dispatched to Flask', [
+                    'query_id' => $queryId,
+                ]);
+            } else {
+                Log::error('DashboardController@dispatchAsk: Cannot connect to Flask server', [
+                    'query_id' => $queryId,
+                    'errno'    => $errno,
+                    'errstr'   => $errstr,
+                ]);
+
+                DB::table('queries')->where('query_id', $queryId)->update(['status' => 'failed']);
+            }
+        } catch (\Throwable $e) {
+            Log::error('DashboardController@dispatchAsk: Exception during socket dispatch', [
+                'query_id'  => $queryId,
+                'exception' => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
+            ]);
+
+            DB::table('queries')->where('query_id', $queryId)->update(['status' => 'failed']);
         }
     }
 

@@ -58,6 +58,13 @@
                                 <button @click="viewChunks(doc)" class="px-3 py-2 rounded-xl text-xs text-[#1a6fa8] hover:bg-white/10 transition-all">
                                     Chunks
                                 </button>
+                                <button
+                                    @click="viewIngest(doc)"
+                                    :disabled="!doc.ingest_session_id"
+                                    :class="doc.ingest_session_id ? 'text-orange-500 hover:bg-orange-500/10' : 'text-[#1a3a52]/30 cursor-not-allowed'"
+                                    class="px-3 py-2 rounded-xl text-xs transition-all">
+                                    Ingest
+                                </button>
                                 <button @click="confirmDelete(doc)" class="px-3 py-2 rounded-xl text-xs text-rose-500 hover:bg-rose-500/10 transition-all">
                                     Delete
                                 </button>

@@ -79,14 +79,14 @@ def _get_db():
         autocommit=False,
     )
 
-def _log_ingest(document_id: int, step: str, message: str) -> None:
+def _log_ingest(document_id: int, step: str, message: str, session_id: str | None = None) -> None:
     conn = _get_db()
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO ingest_logs (document_id, step, message, created_at, updated_at) "
-                "VALUES (%s, %s, %s, NOW(), NOW())",
-                (document_id, step, message)
+                "INSERT INTO ingest_logs (document_id, session_id, step, message, created_at, updated_at) "
+                "VALUES (%s, %s, %s, %s, NOW(), NOW())",
+                (document_id, session_id, step, message)
             )
         conn.commit()
     except Exception as e:
@@ -94,13 +94,13 @@ def _log_ingest(document_id: int, step: str, message: str) -> None:
     finally:
         conn.close()
 
-def _save_answer(query_id: int, answer_text: str) -> int:
+def _save_answer(query_id: int, answer_text: str, sources: list[dict] | None = None) -> int:
     conn = _get_db()
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO answers (query_id, answer_text) VALUES (%s, %s)",
-                (query_id, answer_text),
+                "INSERT INTO answers (query_id, answer_text, sources) VALUES (%s, %s, %s)",
+                (query_id, answer_text, _json.dumps(sources or [])),
             )
             answer_id = cur.lastrowid
             cur.execute("SELECT user_id FROM queries WHERE query_id = %s", (query_id,))
@@ -140,6 +140,24 @@ def _update_query_status(query_id: int, status: str, ms: int | None = None) -> N
         conn.close()
 
 
+def _update_query_step(query_id: int, step: str) -> None:
+    """Reports which real stage _process_ask is currently in — read by
+    DashboardController::queryStatus() so the frontend can poll and show
+    the actual pipeline stage instead of a static message."""
+    conn = _get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE queries SET current_step = %s WHERE query_id = %s",
+                (step, query_id),
+            )
+        conn.commit()
+    except Exception as e:
+        print(f"[ERROR] Failed to update query step: {e}", flush=True)
+    finally:
+        conn.close()
+
+
 def _persist_chunks(document_id: int, file_path: Path, chunks: list[Document]) -> None:
     """Save chunks to MySQL and mark document as indexed."""
     conn = _get_db()
@@ -153,7 +171,7 @@ def _persist_chunks(document_id: int, file_path: Path, chunks: list[Document]) -
             )
 
             cur.execute(
-                "UPDATE documents SET status = 'indexed', path_file = %s WHERE document_id = %s",
+                "UPDATE documents SET path_file = %s WHERE document_id = %s",
                 (str(file_path), document_id),
             )
         conn.commit()
@@ -320,6 +338,65 @@ def health():
     })
 
 
+def _process_ask(query_id: int, question: str) -> None:
+    """Runs the RAG pipeline in the background, updating queries.current_step
+    at each real stage so the frontend's polling endpoint can reflect what's
+    actually happening — not a simulated/fake progress bar."""
+    try:
+        start = time.time()
+
+        _update_query_step(query_id, "embedding")
+        query_vector = _embeddings.embed_query(question)
+
+        _update_query_step(query_id, "similarity_search")
+        scored = _vectorstore.similarity_search_with_score_by_vector(
+            query_vector, k=config.TOP_K
+        )
+
+        _update_query_step(query_id, "top_k")
+        docs = [doc for doc, _score in scored]
+
+        _update_query_step(query_id, "context")
+        context = _format_context(docs)
+
+        _update_query_step(query_id, "generate")
+        llm = ChatGoogleGenerativeAI(
+            model=config.GEMINI_MODEL,
+            google_api_key=config.GEMINI_API_KEY,
+            temperature=config.GEMINI_TEMPERATURE,
+            max_output_tokens=config.GEMINI_MAX_TOKENS,
+            streaming=False,
+        )
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", config.RAG_SYSTEM_PROMPT),
+            ("human", "{question}"),
+        ])
+        chain  = prompt | llm | StrOutputParser()
+        answer = chain.invoke({"context": context, "question": question})
+        elapsed = round((time.time() - start) * 1000)
+
+        # Sumber dipetakan dari hasil similarity search yang sama di atas —
+        # tidak perlu similarity search kedua seperti sebelumnya.
+        sources = [
+            {
+                "source":  d.metadata.get("source_file", "unknown"),
+                "page":    d.metadata.get("page", None),
+                "score":   round(float(s), 4),
+                "excerpt": d.page_content[:200],
+            }
+            for d, s in scored
+        ]
+
+        _save_answer(query_id, answer, sources)
+        _update_query_status(query_id, "answered", elapsed)
+        _update_query_step(query_id, "done")
+
+    except Exception as exc:
+        print(f"[ERROR] _process_ask failed for query_id={query_id}: {exc}", flush=True)
+        _update_query_step(query_id, "error")
+        _update_query_status(query_id, "failed")
+
+
 @app.route("/ask", methods=["POST"])
 def ask():
     data     = request.get_json(force=True)
@@ -330,43 +407,14 @@ def ask():
         return jsonify({"success": False, "error": "question is required"}), 400
     if not query_id:
         return jsonify({"success": False, "error": "query_id is required"}), 400
-    if _rag_chain is None:
+    if _rag_chain is None or _retriever is None:
         return jsonify({"success": False, "error": "No documents indexed yet. Please upload a document first."}), 503
 
-    try:
-        start     = time.time()
-        answer    = _rag_chain.invoke(question)
-        elapsed   = round((time.time() - start) * 1000)
-        answer_id = _save_answer(query_id, answer)
-        _update_query_status(query_id, "answered", elapsed)
+    # Fire-and-forget — sama seperti /ingest. Laravel tidak menunggu respons
+    # ini; ia mengambil progres lewat SSE (/query-logs/{query_id}).
+    threading.Thread(target=_process_ask, args=(query_id, question), daemon=True).start()
 
-        sources = []
-        try:
-            scored = _vectorstore.similarity_search_with_score(question, k=config.TOP_K)
-            sources = [
-                {
-                    "source":  d.metadata.get("source_file", "unknown"),
-                    "page":    d.metadata.get("page", None),
-                    "score":   round(float(s), 4),
-                    "excerpt": d.page_content[:200],
-                }
-                for d, s in scored
-            ]
-        except Exception:
-            pass
-
-        return jsonify({
-            "success":          True,
-            "query_id":         query_id,
-            "answer_id":        answer_id,
-            "answer":           answer,
-            "response_time_ms": elapsed,
-            "sources":          sources,
-        })
-
-    except Exception as exc:
-        _update_query_status(query_id, "failed")
-        return jsonify({"success": False, "query_id": query_id, "error": str(exc)}), 500
+    return jsonify({"success": True, "query_id": query_id}), 202
 
 
 @app.route("/ingest", methods=["POST"])
@@ -375,6 +423,7 @@ def ingest():
     file_path   = data.get("file_path", "").strip()
     document_id = data.get("document_id")
     user_id     = data.get("user_id", 1)
+    session_id  = data.get("session_id")
 
     if not file_path:
         return jsonify({"success": False, "error": "file_path is required"}), 400
@@ -393,29 +442,44 @@ def ingest():
         dest = config.DOCUMENTS_DIR / path.name
         if dest.resolve() != path.resolve():
             shutil.copy2(path, dest)
-            _log_ingest(document_id, "copy", f"Copied to documents/{dest.name}")
+            _log_ingest(document_id, "copy", f"Copied to documents/{dest.name}", session_id)
         else:
-            _log_ingest(document_id, "copy", f"Already in documents/{dest.name}")
+            _log_ingest(document_id, "copy", f"Already in documents/{dest.name}", session_id)
 
         docs = _load_file(dest)
-        _log_ingest(document_id, "load", f"Loaded {len(docs)} page(s)/section(s)")
+        _log_ingest(document_id, "load", f"Loaded {len(docs)} page(s)/section(s)", session_id)
 
         docs = _clean_docs(docs)
-        _log_ingest(document_id, "preprocess", f"Cleaned to {len(docs)} page(s)")
+        _log_ingest(document_id, "preprocess", f"Cleaned to {len(docs)} page(s)", session_id)
 
         chunks = _chunk_docs(docs)
-        _log_ingest(document_id, "chunk", f"Created {len(chunks)} chunks")
+        _log_ingest(document_id, "chunk", f"Created {len(chunks)} chunks", session_id)
 
         _persist_chunks(document_id, dest, chunks)
-        _log_ingest(document_id, "mysql", f"Saved {len(chunks)} chunks to MySQL")
+        _log_ingest(document_id, "mysql", f"Saved {len(chunks)} chunks to MySQL", session_id)
 
         chunks_added = _upsert_faiss(chunks, document_id)
-        _log_ingest(document_id, "faiss", f"FAISS index updated with {chunks_added} chunks")
+        _log_ingest(document_id, "faiss", f"FAISS index updated with {chunks_added} chunks", session_id)
 
         _build_rag_chain()
 
+        # Status flips to 'indexed' here — only once FAISS has actually
+        # finished — not earlier in _persist_chunks. Doing it earlier meant
+        # the SSE stream (which closes as soon as status is indexed/failed)
+        # could cut off before the 'faiss'/'complete' logs ever appeared.
+        conn = _get_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE documents SET status = 'indexed' WHERE document_id = %s",
+                    (document_id,),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
         elapsed = round((time.time() - start) * 1000)
-        _log_ingest(document_id, "complete", "All chunks stored")
+        _log_ingest(document_id, "complete", "All chunks stored", session_id)
 
         return jsonify({
             "success":      True,
@@ -425,16 +489,16 @@ def ingest():
         })
 
     except Exception as exc:
-           _log_ingest(document_id, "error", str(exc))
-           try:
-               conn = _get_db()
-               with conn.cursor() as cur:
-                   cur.execute("UPDATE documents SET status='failed' WHERE document_id=%s", (document_id,))
-               conn.commit()
-               conn.close()
-           except Exception:
-               pass
-           return jsonify({"success": False, "error": str(exc)}), 500
+        _log_ingest(document_id, "error", str(exc), session_id)
+        try:
+            conn = _get_db()
+            with conn.cursor() as cur:
+                cur.execute("UPDATE documents SET status='failed' WHERE document_id=%s", (document_id,))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+        return jsonify({"success": False, "error": str(exc)}), 500
 
 
 def _execute_rebuild() -> None:

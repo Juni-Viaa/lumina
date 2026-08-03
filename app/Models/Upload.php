@@ -17,15 +17,8 @@ class Upload extends Model
     protected $primaryKey = 'document_id';
 
     // ── Timestamps ────────────────────────────────────────────────────────────
-    // Laravel default CREATED_AT is already 'created_at' — stated explicitly
-    // for clarity. UPDATED_AT maps to your 'updated_at' column.
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
-
-    // SoftDeletes reads this via static::DELETED_AT.
-    // Must be plain `const` — `protected const` blocks trait access.
-    // 'deleted_at' is now the standard Laravel name so this is optional,
-    // but kept explicit for clarity.
     const DELETED_AT = 'deleted_at';
 
     // ── Mass assignment ────────────────────────────────────────────────────────

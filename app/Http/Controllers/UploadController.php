@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class UploadController extends Controller
@@ -18,11 +19,9 @@ class UploadController extends Controller
         'application/pdf'                                                          => 'pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
         'application/msword'                                                       => 'doc',
-        'text/plain'                                                               => 'txt',
     ];
 
     private const MAX_SIZE_KB = 102400;
-    private const RAG_SERVER  = 'http://127.0.0.1:5001';
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -44,7 +43,7 @@ class UploadController extends Controller
                 'required',
                 'file',
                 'max:'  . self::MAX_SIZE_KB,
-                'mimes:pdf,doc,docx,txt',
+                'mimes:pdf,doc,docx',
             ],
         ]);
 
@@ -76,6 +75,11 @@ class UploadController extends Controller
             ], 500);
         }
 
+        // Session baru untuk setiap proses ingest — dipakai untuk menyekat
+        // log SSE agar cuma menampilkan proses yang sedang berjalan ini,
+        // bukan riwayat ingest sebelumnya untuk document_id yang sama.
+        $sessionId = (string) Str::uuid();
+
         try {
             // Upsert — bypass Eloquent events to prevent soft-delete-on-insert bug
             $existing = DB::table('documents')
@@ -87,25 +91,27 @@ class UploadController extends Controller
                 DB::table('documents')
                     ->where('document_id', $existing->document_id)
                     ->update([
-                        'deleted_at' => null,
-                        'path_file'  => $storedPath,
-                        'file_type'  => $file->getClientOriginalExtension(),
-                        'size'       => $file->getSize(),
-                        'status'     => 'processing',
-                        'updated_at'  => now(),
+                        'deleted_at'         => null,
+                        'path_file'          => $storedPath,
+                        'file_type'          => $file->getClientOriginalExtension(),
+                        'size'               => $file->getSize(),
+                        'status'             => 'processing',
+                        'ingest_session_id'  => $sessionId,
+                        'updated_at'         => now(),
                     ]);
                 $documentId = $existing->document_id;
             } else {
                 $documentId = DB::table('documents')->insertGetId([
-                    'user_id'       => $userId,
-                    'document_name' => $file->getClientOriginalName(),
-                    'path_file'     => $storedPath,
-                    'file_type'     => $file->getClientOriginalExtension(),
-                    'size'          => $file->getSize(),
-                    'status'        => 'processing',
-                    'created_at'    => now(),
-                    'updated_at'     => now(),
-                    'deleted_at'    => null,
+                    'user_id'            => $userId,
+                    'document_name'      => $file->getClientOriginalName(),
+                    'path_file'          => $storedPath,
+                    'file_type'          => $file->getClientOriginalExtension(),
+                    'size'               => $file->getSize(),
+                    'status'             => 'processing',
+                    'ingest_session_id'  => $sessionId,
+                    'created_at'         => now(),
+                    'updated_at'         => now(),
+                    'deleted_at'         => null,
                 ]);
             }
         } catch (\Throwable $e) {
@@ -121,28 +127,38 @@ class UploadController extends Controller
             ], 500);
         }
 
-        $this->dispatchIngest($documentId, $absolutePath, $userId);
+        $this->dispatchIngest($documentId, $absolutePath, $userId, $sessionId);
 
         return response()->json([
             'message'     => 'Dokumen berhasil diupload dan sedang diproses.',
             'document_id' => $documentId,
+            'session_id'  => $sessionId,
             'status'      => 'processing',
         ], 201);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function streamIngestLogs($documentId)
+    public function streamIngestLogs(Request $request, $documentId)
     {
-        $response = response()->stream(function () use ($documentId) {
+        $sessionId = $request->query('session');
+
+        $response = response()->stream(function () use ($documentId, $sessionId) {
             $lastId = 0;
+            set_time_limit(0);
             while (true) {
-                // Cek jika dokumen sudah selesai (status indexed/failed) atau belum ada log baru
-                $logs = DB::table('ingest_logs')
+                // Cek log baru, dibatasi hanya untuk sesi ingest yang diminta —
+                // ini yang mencegah log dari proses ingest sebelumnya ikut tampil.
+                $query = DB::table('ingest_logs')
                     ->where('document_id', $documentId)
                     ->where('id', '>', $lastId)
-                    ->orderBy('id')
-                    ->get();
+                    ->orderBy('id');
+
+                if ($sessionId) {
+                    $query->where('session_id', $sessionId);
+                }
+
+                $logs = $query->get();
 
                 foreach ($logs as $log) {
                     echo "event: log\n";
@@ -227,7 +243,7 @@ class UploadController extends Controller
         try {
             $documents = Upload::where('user_id', Auth::id())
                 ->orderByDesc('created_at')
-                ->get(['document_id', 'document_name', 'file_type', 'size', 'status', 'created_at']);
+                ->get(['document_id', 'document_name', 'file_type', 'size', 'status', 'ingest_session_id', 'created_at']);
 
             return response()->json($documents);
 
@@ -249,12 +265,13 @@ class UploadController extends Controller
      * Returns immediately — Laravel does not wait for Flask to finish.
      * The UI polls /upload/list for status changes.
      */
-    private function dispatchIngest(int $documentId, string $absolutePath, int $userId): void
+    private function dispatchIngest(int $documentId, string $absolutePath, int $userId, string $sessionId): void
     {
         $payload = json_encode([
             'file_path'   => $absolutePath,
             'document_id' => $documentId,
             'user_id'     => $userId,
+            'session_id'  => $sessionId,
         ]);
 
         try {
@@ -277,6 +294,7 @@ class UploadController extends Controller
 
                 Log::info('UploadController@dispatchIngest: Ingest dispatched to Flask', [
                     'document_id' => $documentId,
+                    'session_id'  => $sessionId,
                     'file'        => basename($absolutePath),
                 ]);
             } else {

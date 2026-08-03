@@ -15,6 +15,7 @@ return new class extends Migration{
             $table->string('file_type',20);
             $table->unsignedBigInteger('size');
             $table->enum('status',['processing','indexed','failed'])->default('processing');
+            $table->uuid('ingest_session_id')->nullable();
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->timestamp('updated_at')->nullable()->useCurrentOnUpdate()->useCurrent();
             $table->timestamp('deleted_at')->nullable();
