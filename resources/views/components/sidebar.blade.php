@@ -85,20 +85,6 @@
         </div>
     </nav>
 
-    <div class="flex-1"></div>
-
-    {{-- Log Out --}}
-    <form method="POST" action="{{ route('logout') }}" class="px-0.5">
-        @csrf
-        <div class="w-full rounded-lg glass-inner flex items-center leading-none">
-            <button type="submit"
-                    class="sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all">
-                <img src="{{ asset('images/icons/LogOutIcon.png') }}" class="w-5 h-5 opacity-70 shrink-0" alt="">
-                <span class="logout-label nav-label text-sm text-black/80 lg:block hidden">Log Out</span>
-            </button>
-        </div>
-    </form>
-
 </aside>
 
 <script>

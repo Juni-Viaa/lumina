@@ -223,15 +223,6 @@
             <img src="{{ asset('images/icons/HistoryIcon.png') }}" class="w-5 h-5 opacity-70" alt="">
             <span class="text-[10px] font-medium">Riwayat</span>
         </a>
-
-        {{-- Profile --}}
-        <a href="{{ route('profile.edit') }}"
-           class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all
-                  {{ request()->routeIs('profile.*') ? 'text-[#1a6fa8]' : 'text-[#1a3a52]/70 hover:text-[#1a3a52]' }}">
-            <img src="{{ asset('images/icons/LogOutIcon.png') }}" class="w-5 h-5 opacity-70" alt="">
-            <span class="text-[10px] font-medium">Profil</span>
-        </a>
-
     </nav>
 
     @stack('scripts')
