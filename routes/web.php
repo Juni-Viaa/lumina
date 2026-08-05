@@ -24,11 +24,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/history/{queryLog}', [DashboardController::class, 'show'])->name('dashboard.show');
     Route::get('/dashboard/history', [DashboardController::class, 'historyJson'])->name('dashboard.history-json');
 
-    // Profile
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
     // Change Password
     Route::get('/change-password', [ChangePasswordController::class, 'editPassword'])->name('change-password.index');
     Route::patch('/change-password', [ChangePasswordController::class, 'editPassword'])->name('profile.password');
@@ -47,7 +42,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/upload/list', [UploadController::class, 'list'])->name('uploads.list');
 
     Route::post('/upload', [UploadController::class, 'store'])->name('uploads.store');
-    Route::get('/ingest-logs/{documentId}', [UploadController::class, 'streamIngestLogs']);
+    Route::get('/ingest-logs-status/{documentId}', [UploadController::class, 'ingestLogStatus']);
     Route::get('/chunks/{documentId}', [UploadController::class, 'getChunks']);
 
     Route::delete('/upload/{upload}', [UploadController::class, 'destroy'])->name('uploads.destroy');

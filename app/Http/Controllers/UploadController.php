@@ -139,54 +139,34 @@ class UploadController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function streamIngestLogs(Request $request, $documentId)
+    /**
+     * Endpoint polling untuk log ingest (JSON biasa, bukan SSE) — jauh lebih
+     * tahan banting lintas hosting/proxy. Frontend kirim `after` (id log
+     * terakhir yang sudah diterima) tiap ~1 detik; endpoint ini balas log
+     * baru + status dokumen saat ini.
+     */
+    public function ingestLogStatus(Request $request, $documentId): JsonResponse
     {
         $sessionId = $request->query('session');
+        $afterId   = (int) $request->query('after', 0);
 
-        $response = response()->stream(function () use ($documentId, $sessionId) {
-            $lastId = 0;
-            set_time_limit(0);
-            while (true) {
-                // Cek log baru, dibatasi hanya untuk sesi ingest yang diminta —
-                // ini yang mencegah log dari proses ingest sebelumnya ikut tampil.
-                $query = DB::table('ingest_logs')
-                    ->where('document_id', $documentId)
-                    ->where('id', '>', $lastId)
-                    ->orderBy('id');
+        $query = DB::table('ingest_logs')
+            ->where('document_id', $documentId)
+            ->where('id', '>', $afterId)
+            ->orderBy('id');
 
-                if ($sessionId) {
-                    $query->where('session_id', $sessionId);
-                }
+        if ($sessionId) {
+            $query->where('session_id', $sessionId);
+        }
 
-                $logs = $query->get();
+        $logs = $query->get(['id', 'step', 'message', 'created_at']);
 
-                foreach ($logs as $log) {
-                    echo "event: log\n";
-                    echo "data: " . json_encode(['id' => $log->id, 'step' => $log->step, 'message' => $log->message, 'created_at' => $log->created_at]) . "\n\n";
-                    $lastId = $log->id;
-                    ob_flush();
-                    flush();
-                }
+        $doc = DB::table('documents')->where('document_id', $documentId)->first(['status']);
 
-                // Cek status dokumen
-                $doc = DB::table('documents')->where('document_id', $documentId)->first(['status']);
-                if ($doc && in_array($doc->status, ['indexed', 'failed'])) {
-                    echo "event: done\n";
-                    echo "data: " . json_encode(['status' => $doc->status]) . "\n\n";
-                    ob_flush();
-                    flush();
-                    break;
-                }
-
-                sleep(1); // polling interval
-            }
-        }, 200, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache',
-            'X-Accel-Buffering' => 'no', // untuk nginx
+        return response()->json([
+            'logs'   => $logs,
+            'status' => $doc->status ?? 'unknown',
         ]);
-
-        return $response;
     }
 
     public function getChunks($documentId)

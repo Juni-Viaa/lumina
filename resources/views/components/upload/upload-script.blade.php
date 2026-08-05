@@ -7,6 +7,7 @@ window.uploadForm = function () {
         // Untuk ingesting
         ingestingDocId: null,
         ingestSessionId: null,
+        ingestPollTimer: null,
         ingestLogs: [],
         ingestStatus: null, // 'processing', 'indexed', 'failed'
 
@@ -103,59 +104,86 @@ window.uploadForm = function () {
             return 'text-[#1a3a52]/50';
         },
 
-        startIngesting(docId, sessionId) {
+        async startIngesting(docId, sessionId, autoRedirect = true) {
             this.activeView = 'ingesting';
             this.ingestingDocId = docId;
             this.ingestSessionId = sessionId;
             this.ingestLogs = [];
             this.ingestStatus = 'processing';
 
-            if (this.eventSource) {
-                this.eventSource.close();
+            if (this.ingestPollTimer) {
+                clearTimeout(this.ingestPollTimer);
+                this.ingestPollTimer = null;
             }
 
-            const url = `/ingest-logs/${docId}?session=${sessionId ?? ''}`;
-            this.eventSource = new EventSource(url);
+            let lastId = 0;
+            let failCount = 0;
+            const maxAttempts = 1800; // ~30 menit di siklus 1 detik — jaring pengaman
+            let attempts = 0;
 
-            this.eventSource.addEventListener('log', (e) => {
-                const data = JSON.parse(e.data);
-                this.ingestLogs.push(data);
-                // scroll to bottom
-                this.$nextTick(() => {
-                    const container = this.$refs.logContainer;
-                    if (container) container.scrollTop = container.scrollHeight;
-                });
-            });
+            const poll = async () => {
+                attempts++;
 
-            this.eventSource.addEventListener('done', (e) => {
-                const data = JSON.parse(e.data);
-                this.ingestStatus = data.status;
-                this.eventSource.close();
-                // optional: after 2s switch to manage
-                setTimeout(() => {
-                    this.activeView = 'manage';
-                    this.fetchDocuments();
-                }, 2000);
-            });
+                try {
+                    const res = await fetch(
+                        `/ingest-logs-status/${docId}?session=${sessionId ?? ''}&after=${lastId}`
+                    );
+                    const data = await res.json();
+                    failCount = 0; // request ini berhasil, reset penghitung gagal
 
-            this.eventSource.onerror = () => {
-                // handle error
-                this.ingestStatus = 'failed';
-                this.eventSource.close();
+                    if (data.logs && data.logs.length) {
+                        this.ingestLogs.push(...data.logs);
+                        lastId = data.logs[data.logs.length - 1].id;
+                        this.$nextTick(() => {
+                            const container = this.$refs.logContainer;
+                            if (container) container.scrollTop = container.scrollHeight;
+                        });
+                    }
+
+                    this.ingestStatus = data.status;
+
+                    if (['indexed', 'failed'].includes(data.status)) {
+                        if (autoRedirect) {
+                            setTimeout(() => {
+                                this.activeView = 'manage';
+                                this.fetchDocuments();
+                            }, 2000);
+                        }
+                        return;
+                    }
+
+                } catch (err) {
+                    // Satu request gagal (mis. hiccup jaringan sesaat) BUKAN
+                    // berarti proses ingest-nya gagal — coba lagi beberapa kali
+                    // sebelum menyerah, jangan langsung tandai 'failed'.
+                    failCount++;
+                    if (failCount >= 5) {
+                        return;
+                    }
+                }
+
+                if (attempts >= maxAttempts) {
+                    return; // biarkan status terakhir yang diketahui, jangan menebak
+                }
+
+                this.ingestPollTimer = setTimeout(poll, 1000);
             };
+
+            poll();
         },
 
         // Dipanggil dari tombol "Ingest" di daftar dokumen — melihat log
-        // sesi ingest terakhir untuk dokumen tersebut.
+        // sesi ingest terakhir untuk dokumen tersebut. autoRedirect=false
+        // karena ini cuma untuk ditinjau, bukan proses yang baru dimulai.
         viewIngest(doc) {
             if (!doc.ingest_session_id) return;
-            this.startIngesting(doc.document_id, doc.ingest_session_id);
+            this.startIngesting(doc.document_id, doc.ingest_session_id, false);
         },
 
         stopIngesting() {
-            if (this.eventSource) {
-                this.eventSource.close();
-                this.eventSource = null;
+            if (this.ingestPollTimer) {
+                clearTimeout(this.ingestPollTimer);
+                this.ingestPollTimer = null;
             }
         },
 

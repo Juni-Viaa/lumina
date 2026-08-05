@@ -5,15 +5,15 @@
             messages:    {!! json_encode($initialMessages ?? []) !!},
             input:         '',
             loading:       false,
-            processingMsg: 'Lumina sedang memulai...',
+            processingMsg: 'Lumina sedang memulai',
 
             stepLabels: {
-                embedding:          'Mengubah pertanyaan menjadi embedding...',
-                similarity_search:  'Mencari potongan dokumen yang relevan...',
-                top_k:              'Mengambil potongan dokumen paling relevan...',
-                context:            'Menyusun konteks dari dokumen...',
-                generate:           'Menghasilkan jawaban dengan AI...',
-                done:               'Jawaban siap...',
+                embedding:          'Mengubah pertanyaan menjadi embedding',
+                similarity_search:  'Mencari potongan dokumen yang relevan',
+                top_k:              'Mengambil potongan dokumen paling relevan',
+                context:            'Menyusun konteks dari dokumen',
+                generate:           'Menghasilkan jawaban dengan AI',
+                done:               'Jawaban siap',
             },
 
             async sendMessage() {
@@ -21,7 +21,7 @@
                 if (!question || this.loading) return;
 
                 this.loading       = true;
-                this.processingMsg = 'Lumina sedang memulai...';
+                this.processingMsg = 'Lumina sedang memulai';
                 this.messages.push({ role: 'user', content: question });
                 this.input   = '';
 
