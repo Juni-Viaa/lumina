@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class UploadController extends Controller
@@ -159,7 +160,17 @@ class UploadController extends Controller
             $query->where('session_id', $sessionId);
         }
 
-        $logs = $query->get(['id', 'step', 'message', 'created_at']);
+        $logs = $query->get(['id', 'step', 'message', 'created_at'])
+            ->map(function ($log) {
+                // Nilai created_at dari NOW() MySQL sudah waktu lokal
+                // Asia/Jakarta (GMT+7) — dikonfirmasi cocok persis dengan
+                // jam lokal user. DB::table() mengembalikannya sebagai
+                // string polos tanpa penanda zona waktu, jadi kita tandai
+                // eksplisit di sini supaya JS (new Date(...)) mengonversi
+                // dengan benar ke zona waktu browser, bukan salah kira UTC.
+                $log->created_at = Carbon::parse($log->created_at, 'Asia/Jakarta')->toIso8601String();
+                return $log;
+            });
 
         $doc = DB::table('documents')->where('document_id', $documentId)->first(['status']);
 
